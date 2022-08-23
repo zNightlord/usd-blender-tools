@@ -8,6 +8,7 @@ from pxr import Usd, UsdGeom
 from mathutils import Matrix,Vector,Euler
 
 blender = False
+
 os.system('cls')
 
 if blender:
@@ -15,16 +16,15 @@ if blender:
     D = bpy.data
     C = bpy.context
 
-
 then = time.time()
 filePath = 'D:\\Forge modding\\ModDev\\run\\saves\\modd 4\\modd.usda'
 
-
-debug = False
-#bpy.ops.wm.usd_import(filepath=filePath,import_usd_preview=True)
-
+#### USD functions ####
 def read_path(file_path):
-    """Create needed paths for the USD to get"""
+    """Create needed paths for the USD to get
+    
+    
+    """
     
     path = os.path.splitext(file_path)
     base = os.path.basename(file_path)
@@ -70,28 +70,34 @@ def read_usd(paths):
     return stage_dict
 
 def read_chunk(usd_paths):
+    """Reading though the chunks of the usd file
+    'path' : reference path of blocks in the chunks
+    'chunks' : chunks
+    'points' : point postions 
+    'indicies': block indicies to use for instancing
+    """
     stage = usd_paths.get("stage")
     chunks = usd_paths.get("chunk")
     world_path = usd_paths.get("world_path")
     
     chunk_dict = {
         "chunks": [],
-        "blocks" : [],
+        "path" : [],
         "points" : [],
         "indices": []
     }
 
-    for ch in chunks:
+    for ic,ch in enumerate(chunks):
         chunk_name = str(ch).split(str(world_path))[1].split('>')[0]
         if 'Chunk' in chunk_name:            
             chunk_ref = stage.GetPrimAtPath(world_path + chunk_name)
             pos = chunk_ref.GetAttribute('positions').Get()
             id = chunk_ref.GetAttribute('protoIndices').Get()
-        
+            print(ic,pos)
             rel = chunk_ref.GetRelationship('prototypes')
             blocks_path = rel.GetTargets()
             
-            chunk_dict['blocks'].append(blocks_path)
+            chunk_dict['path'].append(blocks_path)
             chunk_dict['chunks'].append(chunk_name)
             chunk_dict['points'].append(pos) 
             chunk_dict['indices'].append(id)
@@ -99,11 +105,18 @@ def read_chunk(usd_paths):
     return chunk_dict
 
 def read_block(usd_paths,chunks):
+    """Read through the blocks of the chunk
+    'path' : reference mesh path
+    'block' : block name in number form
+    'name': block real name
+    'id' : the Minecraft block id
+    'sub_id': the sub nbt id of that block 
+    """
     stage = usd_paths.get("stage")
     usd_block_path = usd_paths.get("block_path")
-    block_path = chunks.get("blocks")
+    block_path = chunks.get("path")
     block_dict = {
-        "block_name": [],
+        "block": [],
         "name" : [],
         "id": [],
         "sub_id": [],
@@ -116,7 +129,8 @@ def read_block(usd_paths,chunks):
         _id = []
         _sub_id = []
         _mesh = []
-        for i,block in enumerate(blocks):      
+        for i,block in enumerate(blocks):  
+            
             block_name = str(block).split(usd_block_path+'/Blocks')[1]  
             block_ref = stage.GetPrimAtPath(block)
             child_mesh = block_ref.GetChildren()
@@ -130,7 +144,7 @@ def read_block(usd_paths,chunks):
             _mesh.append(child_mesh)
 
         # print(full_name)
-        block_dict['block_name'].append(_full_name)
+        block_dict['block'].append(_full_name)
         block_dict['name'].append(_name)
         block_dict['id'].append(_id)
         block_dict['sub_id'].append(_sub_id)
@@ -140,46 +154,58 @@ def read_block(usd_paths,chunks):
     return block_dict
 
 def read_mesh(usd_paths,blocks):
+    """ Read the block mesh
+    'mesh' : mesh names of that blocks, some block can have multiple meshes  
+    'path': reference material path
+    'instance': mesh name for instancing 
+    """
     stage = usd_paths.get("stage")
     usd_block_path = usd_paths.get("block_path")
-    mesh_path = blocks.get("path")  
-    block_name = blocks.get("block_name")
+    block_path = blocks.get("path")
+    block_name = blocks.get("block")
 
     mesh_dict = {
-        "block": [],
-        "block_name": [],
-        "path": []
+        "mesh": [],
+        "path": [],
+        "instance": []
     }
     
-    for meshes in mesh_path:
-        _grouped_block =[]  
+    for ib,blocks in enumerate(block_path):
+        _mesh = []
         _block = []
-        _block_instance = []
         _material = []
-        for i,mesh in enumerate(meshes):
-            child_name = str(mesh).split(str(usd_block_path))[1].split('>')[0]
-            child_path = str(usd_block_path)+child_name
-            
-            _grouped_block.append(child_name)
-            child_material = stage.GetPrimAtPath(child_path)
-            _material.append(child_material)
-            if i != 0:
-                _block.append(_grouped_block)
-                _block_instance.append(block_name)
-            else:
-                _block.append(child_name)
-                _block_instance.append(child_name)
-
-        mesh_dict['block'].append(_block)
-        mesh_dict['block_name'].append(_block_instance)
-        mesh_dict['path'].append(_material)
+        for im,meshes in enumerate(blocks):
+            _grouped_block =[]  
+            for mesh in meshes:
+                child_name = str(mesh).split(str(usd_block_path))[1].split('>')[0]
+                child_path = str(usd_block_path)+child_name
+                _grouped_block.append(child_name)
+                child_material = stage.GetPrimAtPath(child_path)
+                _material.append(child_material)
+                if len(meshes) >= 2:
+                    tmp_mesh = _grouped_block
+                    tmp_block = block_name[ib][im]
+                else:
+                    tmp_mesh = child_name
+                    tmp_block = child_name.split(block_name[ib][im])[1]
+                _mesh.append(tmp_mesh)
+                _block.append(tmp_block)
+            print(tmp_block,_grouped_block)
+            mesh_dict['mesh'].append(_mesh)
+            mesh_dict['path'].append(_material)
+            mesh_dict['instance'].append(_block)
     return mesh_dict
 
 def read_material(usd_paths,meshes):
+    """
+    'path': reference all the material paths used
+    'diffuse': diffuse texture and path
+    'material': material name
+    
+    """
     stage = usd_paths.get("stage")
     usd_block_path = usd_paths.get("block_path")
     material_path = meshes.get("path")
-    debug = True
     
     _general_mat = []
     _diffuse = []
@@ -196,7 +222,6 @@ def read_material(usd_paths,meshes):
         material_path = usd_block_path+'/Blocks'+'/Looks'+material[1][:-3]
 
         material_ref = stage.GetPrimAtPath(material_path+'/diffuse_texture')
-        print('material= '+ material[1][:-3])
         # print(material_ref.GetPropertyNames())
         diffuse = material_ref.GetProperty('inputs:file').Get()
         diffuse_path = material[1][:-3]
@@ -216,8 +241,62 @@ usd_paths = read_usd(paths)
 chunks = read_chunk(usd_paths)
 blocks = read_block(usd_paths,chunks)
 meshes = read_mesh(usd_paths,blocks)
-mat = read_material(usd_paths,meshes)
-pprint(mat)
+# mat = read_material(usd_paths,meshes)
+
+## adjacent function
+def adjacent_point():
+    ch = chunks.get("chunks")
+    pt = chunks.get("points")
+    for ic,c in enumerate(ch):
+        for i1,v1 in enumerate(pt[ic]):
+            for i2,v2 in enumerate(pt[ic]):
+                # print(i1,i2)
+                # print(type(v1))
+                diff = abs(v1[0] - v2[0]) + abs(v1[1] - v2[1]) + abs(v1[2] - v2[2])
+                if diff == 1 and not (v1 == v2):
+                    # ix.append([i1,i2])
+                    print([str(v1),str(v2)],[i1,i2])
+
+
+#### Blender functions start here ####
+def create_pts(paths,chunks,blocks):
+    """Create points with attributes"""
+    file_name = paths.get("file_name")  # file name
+    chunks = chunks.get("chunks")       # chunks
+    points = chunks.get("points")       # points position
+    indicies = chunks.get("indices")    # instance index
+    id =  blocks.get("id")              # block index
+    sub_id =  blocks.get("sub_id")      # block nbt index
+    
+    object_mesh = []
+    for ic,chunk in enumerate(chunks):
+        mesh_name  = file_name+ ' - '+ 'PT_' +chunk.split('/')[1]
+        if not bool(D.meshes.get(mesh_name)):
+            mesh = D.meshes.new(mesh_name)  # add the new 
+        else:
+            mesh = D.meshes[mesh_name]
+
+        bm = bmesh.new()   
+        bm.from_mesh(mesh)   
+        
+        l= bm.verts.layers.int.new("instance_index")
+        p= bm.verts.layers.int.new("block_index")
+        n= bm.verts.layers.int.new("nbt_index")
+        for ip,point in enumerate(points):
+            v1 = bm.verts.new(point)
+            bm.verts.ensure_lookup_table()
+            bm.verts[ip][l] = indicies[ip]
+            bm.verts[ip][p] = id[indicies[ip]]
+            bm.verts[ip][n] = sub_id[indicies[ip]]
+            for v2 in bm.verts:
+                diff = abs(v1.co[0] - v2.co[0]) + abs(v1.co[1] - v2.co[1]) + abs(v1.co[2] - v2.co[2])
+                if diff == 1 and not v1 == v2:
+                    e = bm.edges.new([v1, v2])
+
+        bm.to_mesh(mesh)
+        bm.free()
+        object_mesh.append(mesh)
+    return object_mesh
 
 def create_collection(name,parent = None):
     #Create collection, if exist get it.
@@ -237,19 +316,18 @@ def moveto_collection(objects,collection):
         for col in obj.users_collection:
             col.objects.unlink(obj) 
         collection.objects.link(obj)
-        
 
-def create_usd_collection(file_path):
+def create_usd_collection(paths):
     """ Create collection to store usd and fix merged blocks
     Example: Grass Block is Block_2_0 need to merge all meshes
     dirt,grass_block_side,grass_block_top into one """
     # Create the USD collections
+    file_name = paths.get("file_name")
     collections = []
     usd_col = create_collection(file_name + " USD Collection",)
     pt_col = create_collection(file_name + " USD Points")
     block_col = create_collection(file_name + " USD BlockLib")
     
-   
     bpy.ops.wm.usd_import(filepath=filePath,import_usd_preview=True)
     
     objs = C.selected_objects
@@ -302,8 +380,6 @@ def create_usd_collection(file_path):
     collections.append([usd_col,pt_col,block_col])
     return collections
 
-
-
 def create_asset():
     """Create node group assets """
     if not bool(D.node_groups.get("Post_Surface")):
@@ -346,145 +422,94 @@ def create_asset():
         
     else:
         process = D.node_groups["Process"]
+    return process
 
-def create_pts(chunk_name,points):
-    mesh_name  = file+ ' - '+ 'PT_' +chunk_name.split('/')[1]
-    if not bool(D.meshes.get(mesh_name)):
-        mesh = D.meshes.new(mesh_name)  # add the new mesh
+# process = create_asset()
+
+def create_nodegroup(chunks,meshes):
+    """ Create a node group for instancing on the object"""
+    chunk_name = chunks.get("chunks")
+    block_name = meshes.get("block_name")
+
+    nodegroup_name = chunk_name.split('/')[1]
+    if not bool(D.node_groups.get(nodegroup_name)):
+        instance = D.node_groups.new(chunk_name.split('/')[1],'GeometryNodeTree')
+        out_instance = instance.nodes.new('NodeGroupOutput')
+        in_instance = instance.nodes.new('NodeGroupInput')
+        instance.inputs.new(type='NodeSocketGeometry',name='Geometry')
+        
+        out_instance.location = (800,0)
+        join_block = instance.nodes.new('GeometryNodeJoinGeometry')
+        join_block.name='Join Block Instances'
+        join_block.location = (-200,-200)
+        frame_block = instance.nodes.new('NodeFrame')
+        frame_block.name = chunk_name.split('/')[1]+'_Blocks'
+        frame_block.label = frame_block.name
+        join_block.parent = frame_block
+        i = 0                
+        
     else:
-        mesh = D.meshes[mesh_name]
+        instance = D.node_groups[nodegroup_name]
+        join_block = instance.nodes['Join Block Instances']
+        frame_block = instance.nodes[chunk_name.split('/')[1]+'_Blocks']
+
+    for node in instance.nodes:
+        if node.type == 'GeometryNodeObjectInfo':
+            instance.nodes.remove(node)
+            
+    for block in reversed(block_name):
+        name = block.split('/')[1]
+        if bool(D.objects.get(name)):
+            inst = D.objects[name]      
+            
+        block_node = instance.nodes.new('GeometryNodeObjectInfo')
+        block_node.name = inst.name
+        block_node.label = inst.name
+        block_node.hide = True
+        block_node.location = (-500,-500+i)
+        block_node.inputs[1].default_value = True
+        block_node.parent = frame_block
+        instance.links.new(join_block.inputs[0],block_node.outputs[3])
+        i+=50
+        if inst.type == 'MESH':
+            block_node.inputs[0].default_value = inst
+    
+    if not bool(instance.nodes.get("Process")):
+        process_group = instance.nodes.new("GeometryNodeGroup")
+        process_group.name = "Process"
+        process_group.node_tree = process
+        process_group.location =  (300,0)
+    
+        instance.links.new(out_instance.inputs[0],process_group.outputs[0])
+        instance.links.new(process_group.inputs[1],join_block.outputs[0])
+        
+        instance.links.new(process_group.inputs[0],in_instance.outputs[0])
+        instance.links.new(process_group.inputs[2],in_instance.outputs[1])
+        instance.links.new(process_group.inputs[3],in_instance.outputs[2])
+        instance.links.new(process_group.inputs[4],in_instance.outputs[3])
+    
+def create_object(mesh,collection):
+    object_name  = mesh.name
     if not bool(D.objects.get(mesh.name)):
         obj = D.objects.new(mesh.name, mesh)
         collection.objects.link(obj)
-        d = Matrix.Rotation(math.radians(90),4,'X')
-        obj.matrix_world = d
+        # d = Matrix.Rotation(math.radians(90),4,'X')
+        # obj.matrix_world = d
     else:
-        obj = D.objects[mesh_name]
-        
+        obj = D.objects[object_name]
 
-#        bpy.context.view_layer.objects.active = obj
-#        obj.rotation_euler[0] = math.radians(90)
-    me = mesh
-    bm = bmesh.new()   
-    bm.from_mesh(me)   
-    
-    l= bm.verts.layers.int.new("instance_index")
-    p= bm.verts.layers.int.new("block_index")
-    n= bm.verts.layers.int.new("nbt_index")
-    for i,v in enumerate(points):
-        v1 = bm.verts.new(v)
-        bm.verts.ensure_lookup_table()
-        bm.verts[i][l] = id[i]
-        bm.verts[i][p] = blockid_list[id[i]]
-        bm.verts[i][n] = blockidnbt_list[id[i]]
-#            print(str(i) + ' '+str(pos[i])+ ' ' + str(id[i]))
-            
-        for v2 in bm.verts:
-            diff = abs(v1.co[0] - v2.co[0]) + abs(v1.co[1] - v2.co[1]) + abs(v1.co[2] - v2.co[2])
-            if diff == 1:
-                try:
-                    e = bm.edges.new([v1, v2])
-                except:
-                    pass
-#                    print(str(v1.co) + ' ' + str(v2.co) + ' ' +str(diff))
-        
-#        for v in bm.verts:
-#            v[p] = bytes(f' Vert','utf-8')
+    if not bool(obj.modifiers.get("Point Instancer")):
+        mod = obj.modifiers.new('Point Instancer','NODES')
+        mod.node_group = instance
+        mod["Input_2_use_attribute"] = True 
+        mod["Input_2_attribute_name"] = "instance_index"
+        mod["Input_3_use_attribute"] = True 
+        mod["Input_3_attribute_name"] = "block_index"
+        mod["Input_4_use_attribute"] = True 
+        mod["Input_4_attribute_name"] = "nbt_index"
+    else:
+        pass
 
-    bm.to_mesh(me)
-    bm.free()
-        
-def create_nodegroup():
-        nodegroup_name = chunk_name.split('/')[1]
-        if not bool(D.node_groups.get(nodegroup_name)):
-            instance = D.node_groups.new(chunk_name.split('/')[1],'GeometryNodeTree')  # add the new mesh
-            out_instance = instance.nodes.new('NodeGroupOutput')
-            in_instance = instance.nodes.new('NodeGroupInput')
-            instance.inputs.new(type='NodeSocketGeometry',name='Geometry')
-            
-            out_instance.location = (800,0)
-            join_block = instance.nodes.new('GeometryNodeJoinGeometry')
-            join_block.name='Join Block Instances'
-            join_block.location = (-200,-200)
-            frame_block = instance.nodes.new('NodeFrame')
-            frame_block.name = chunk_name.split('/')[1]+'_Blocks'
-            frame_block.label = frame_block.name
-            join_block.parent = frame_block
-            i = 0                
-            
-        else:
-            instance = D.node_groups[nodegroup_name]
-            join_block = instance.nodes['Join Block Instances']
-            frame_block = instance.nodes[chunk_name.split('/')[1]+'_Blocks']
-
-        for node in instance.nodes:
-            if node.type == 'GeometryNodeObjectInfo':
-                instance.nodes.remove(node)
-                
-        for block in reversed(block_instance):
-            name = block.split('/')[1]
-    #        if name == 'dirt':
-    #            inst = D.objects['dirt.001']
-    #        elif name == 'rooted_dirt':
-    #            inst = D.objects['dirt.001']
-    #        elif name == 'flowering_azalea_leaves' or name == 'azalea_leaves':
-    #            inst = D.objects['oak_leaves']
-    #        
-    #        else:
-    
-            if bool(D.objects.get(name)):
-                inst = D.objects[name]
-            else:
-#                    inst = D.objects['Empty']
-                if name == 'dirt':
-                    D.objects['dirt.001'].name = 'dirt'
-                    inst =  D.objects['dirt']
-                else:
-                    inst = D.objects['Empty']
-                broken_block.append(name)            
-                
-            block_node = instance.nodes.new('GeometryNodeObjectInfo')
-            block_node.name = inst.name
-            block_node.label = inst.name
-            block_node.hide = True
-            block_node.location = (-500,-500+i)
-            block_node.inputs[1].default_value = True
-            block_node.parent = frame_block
-            instance.links.new(join_block.inputs[0],block_node.outputs[3])
-            i+=50
-            if inst.type == 'MESH':
-                block_node.inputs[0].default_value = inst
-            else:
-                block_node.inputs[0].default_value = merge_obj    
-        
-        if not bool(instance.nodes.get("Process")):
-            process_group = instance.nodes.new("GeometryNodeGroup")
-            process_group.name = "Process"
-            process_group.node_tree = process
-            process_group.location =  (300,0)
-        
-            instance.links.new(out_instance.inputs[0],process_group.outputs[0])
-            instance.links.new(process_group.inputs[1],join_block.outputs[0])
-            
-            instance.links.new(process_group.inputs[0],in_instance.outputs[0])
-            instance.links.new(process_group.inputs[2],in_instance.outputs[1])
-            instance.links.new(process_group.inputs[3],in_instance.outputs[2])
-            instance.links.new(process_group.inputs[4],in_instance.outputs[3])
-        
-
-        if not bool(obj.modifiers.get("Point Instancer")):
-            mod = obj.modifiers.new('Point Instancer','NODES')
-            mod.node_group = instance
-            mod["Input_2_use_attribute"] = True 
-            mod["Input_2_attribute_name"] = "instance_index"
-            mod["Input_3_use_attribute"] = True 
-            mod["Input_3_attribute_name"] = "block_index"
-            mod["Input_4_use_attribute"] = True 
-            mod["Input_4_attribute_name"] = "nbt_index"
-        else:
-            pass
-    
-            
 def fix_material(materials):
     for mat in materials:
         try:
@@ -496,18 +521,12 @@ def fix_material(materials):
 def clean_mesh(meshes):
     for mesh in meshes:
         D.meshes.remove(mesh,do_unlink=True)
-            
+
 def clean_mat(materials):
     for material in materials:
         D.materials.remove(material,do_unlink=True)   
 
+# mesh = create_pts(paths,chunks,blocks)
 
 now = time.time() #Time after it finished
-
 print("It took: ", now-then, " seconds")
-
-
-#print(prim_ref.GetPropertyNames())
-
-
-     
