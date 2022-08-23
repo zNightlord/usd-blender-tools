@@ -1,20 +1,22 @@
 
+from re import I
 import cython
-import math
-from pprint import pprint
+import math,numpy
 import os,time
-from pxr import Usd, UsdGeom   
+from pprint import pp, pprint
+from pxr import Usd, UsdGeom
+from mathutils import Matrix,Vector,Euler
+
 blender = False
+os.system('cls')
 
 if blender:
     import bpy,bmesh
-    from mathutils import Matrix,Vector,Euler
     D = bpy.data
     C = bpy.context
 
 
 then = time.time()
-   
 filePath = 'D:\\Forge modding\\ModDev\\run\\saves\\modd 4\\modd.usda'
 
 
@@ -50,7 +52,6 @@ def read_usd(paths):
     usd_worldpath = '/'+world_str+'/VoxelMap'
     usd_blockpath = usd_worldpath+'/BlockLib'
 
-    
     stage_ref = Usd.Stage.Open(paths.get("file_path"))
     #prim_ref = stage_ref.GetPrimAtPath(mapPath + '/Chunk_P0P0P0')
     block_ref = stage_ref.GetPrimAtPath(usd_blockpath+'/Blocks')
@@ -58,7 +59,7 @@ def read_usd(paths):
     chunk_ref = voxel_ref.GetChildren()
 
 
-    stage = {
+    stage_dict = {
         "stage": stage_ref,
         "blocklib" :  block_ref,
         "chunk": chunk_ref,
@@ -66,112 +67,157 @@ def read_usd(paths):
         "world_path": usd_worldpath,
         "block_path": usd_blockpath,
     }
-    return stage
+    return stage_dict
 
-paths = read_path(filePath)
-
-usd_paths = read_usd(paths)
-
-broken_block = []   
 def read_chunk(usd_paths):
     stage = usd_paths.get("stage")
     chunks = usd_paths.get("chunk")
     world_path = usd_paths.get("world_path")
-    block_path = usd_paths.get("block_path")
     
-    chunk = {
-        "chunk": [],
-        "block" : []
+    chunk_dict = {
+        "chunks": [],
+        "blocks" : [],
+        "points" : [],
+        "indices": []
     }
 
     for ch in chunks:
         chunk_name = str(ch).split(str(world_path))[1].split('>')[0]
-        if 'Chunk' in chunk_name:
-            if debug:
-                print(' === '+chunk_name)
-            
+        if 'Chunk' in chunk_name:            
             chunk_ref = stage.GetPrimAtPath(world_path + chunk_name)
             pos = chunk_ref.GetAttribute('positions').Get()
             id = chunk_ref.GetAttribute('protoIndices').Get()
         
             rel = chunk_ref.GetRelationship('prototypes')
-            blocks = rel.GetTargets()
-            chunk['chunk'].append(chunk_name)
-            chunk['block'].append(blocks)
-    return chunk
+            blocks_path = rel.GetTargets()
             
-chunk = read_chunk(usd_paths)
-
-pprint([chunk.get("chunk")[1],chunk.get("block")[1]])
-
-def read_block(chunk_block):
-    block = []
-
-    for blocks in chunk_block:
-        for iblock,bl in enumerate(blocks):
-            block_name = str(blocks).split(block_path+'/Blocks')
-            block_path = bl
+            chunk_dict['blocks'].append(blocks_path)
+            chunk_dict['chunks'].append(chunk_name)
+            chunk_dict['points'].append(pos) 
+            chunk_dict['indices'].append(id)
             
-            if debug:
-                print(block_path)
-                print(blockname + ' ' +str(iblock))
-                
-            block_ref = stage_ref.GetPrimAtPath(block_path)
-            child = block_ref.GetChildren()
+    return chunk_dict
+
+def read_block(usd_paths,chunks):
+    stage = usd_paths.get("stage")
+    usd_block_path = usd_paths.get("block_path")
+    block_path = chunks.get("blocks")
+    block_dict = {
+        "block_name": [],
+        "name" : [],
+        "id": [],
+        "sub_id": [],
+        "path" : []
+    }
+
+    for blocks in block_path:
+        _full_name = []
+        _name = []
+        _id = []
+        _sub_id = []
+        _mesh = []
+        for i,block in enumerate(blocks):      
+            block_name = str(block).split(usd_block_path+'/Blocks')[1]  
+            block_ref = stage.GetPrimAtPath(block)
+            child_mesh = block_ref.GetChildren()
             name = block_ref.GetAttribute('typeName').Get()
-            block.append([blockname,child,int(blockname.split('_')[1]),int(blockname.split('_')[2])])
-    return block
-        
-def read_mesh():  
-    grouped_block =[]  
-    block_list = []
-    block_instance = []
-        
-    for imesh,ch in enumerate(child):
-        child_name = str(ch).split(str(block_path))[1].split('>')[0]
-        child_path = str(block_path)+child_name
-        
-        if debug:
-            print('mesh= ' + child_name)
-        
-        grouped_block.append(child_name)
-        child_ref = stage_ref.GetPrimAtPath(child_path)
-        mat_rel = child_ref.GetRelationship('material:binding')
-        mat = mat_rel.GetTargets()
-        
-    if imesh != 0:
-        block_list.append(grouped_block)
-        block_instance.append(block)
-    else:
-        block_list.append(child_name)
-        block_instance.append(child_name)
+            # blocks['name'].append(name)
+            _full_name.append(block_name)
+            _name.append(name)
+            id = block_name.split("/Block_")[1].split('_')
+            _id.append(id[0])
+            _sub_id.append(id[1])
+            _mesh.append(child_mesh)
+
+        # print(full_name)
+        block_dict['block_name'].append(_full_name)
+        block_dict['name'].append(_name)
+        block_dict['id'].append(_id)
+        block_dict['sub_id'].append(_sub_id)
+        block_dict['path'].append(_mesh)
+
+    # print(block_dict.get("block_name"))
+    return block_dict
+
+def read_mesh(usd_paths,blocks):
+    stage = usd_paths.get("stage")
+    usd_block_path = usd_paths.get("block_path")
+    mesh_path = blocks.get("path")  
+    block_name = blocks.get("block_name")
+
+    mesh_dict = {
+        "block": [],
+        "block_name": [],
+        "path": []
+    }
     
-        for m in mat:
-            material = str(m).split('Looks')
-            material_path = blockPath+'/Blocks'+'/Looks'+material[1]
+    for meshes in mesh_path:
+        _grouped_block =[]  
+        _block = []
+        _block_instance = []
+        _material = []
+        for i,mesh in enumerate(meshes):
+            child_name = str(mesh).split(str(usd_block_path))[1].split('>')[0]
+            child_path = str(usd_block_path)+child_name
             
-            material_ref = stage_ref.GetPrimAtPath(material_path+'/Shader')
-            diffuse = material_ref.GetProperty('inputs:diffuse_texture').Get()
-            
-            if debug:
-                print('material= '+ material[1])
-                print(material_ref.GetPropertyNames())
-                print('texture= '+ str(diffuse).strip('@.').strip('@'))
-                print(' ')
-        
-# chunk_block = read_chunk(chunks)
-#for chunk in chunk_block:
-#    print(chunk[0])
-#    print(chunk[1])        
-#block = read_block(chunk_block)
-#block_name = str(block[0][1]).split(block[0][0])[1].split('>)]')[0]
-#print(block_name)
-#        dict = {blockid_list[i]: block_list[i] for i in range(len(blockid_list))}
-#        if debug:
-#            print(dict)
-#            print(block_instance)
+            _grouped_block.append(child_name)
+            child_material = stage.GetPrimAtPath(child_path)
+            _material.append(child_material)
+            if i != 0:
+                _block.append(_grouped_block)
+                _block_instance.append(block_name)
+            else:
+                _block.append(child_name)
+                _block_instance.append(child_name)
 
+        mesh_dict['block'].append(_block)
+        mesh_dict['block_name'].append(_block_instance)
+        mesh_dict['path'].append(_material)
+    return mesh_dict
 
+def read_material(usd_paths,meshes):
+    stage = usd_paths.get("stage")
+    usd_block_path = usd_paths.get("block_path")
+    material_path = meshes.get("path")
+    debug = True
+    
+    _general_mat = []
+    _diffuse = []
+    _material = []
+    for materials in material_path:
+        for material in materials:
+            mat_rel = material.GetRelationship('material:binding')
+            mat = mat_rel.GetTargets()   
+            if not mat in _general_mat:
+                _general_mat.append(mat)
+
+    for m in _general_mat:
+        material = str(m).split('Looks')
+        material_path = usd_block_path+'/Blocks'+'/Looks'+material[1][:-3]
+
+        material_ref = stage.GetPrimAtPath(material_path+'/diffuse_texture')
+        print('material= '+ material[1][:-3])
+        # print(material_ref.GetPropertyNames())
+        diffuse = material_ref.GetProperty('inputs:file').Get()
+        diffuse_path = material[1][:-3]
+        # print(' ')
+        _diffuse.append(diffuse)
+        _material.append(diffuse_path)
+
+    material_dict = {
+        "path": _general_mat,
+        "diffuse" : _diffuse,
+        "material" : _material
+    }  
+    return material_dict
+
+paths = read_path(filePath)
+usd_paths = read_usd(paths)
+chunks = read_chunk(usd_paths)
+blocks = read_block(usd_paths,chunks)
+meshes = read_mesh(usd_paths,blocks)
+mat = read_material(usd_paths,meshes)
+pprint(mat)
 
 def create_collection(name,parent = None):
     #Create collection, if exist get it.
@@ -425,10 +471,7 @@ def create_nodegroup():
             instance.links.new(process_group.inputs[3],in_instance.outputs[2])
             instance.links.new(process_group.inputs[4],in_instance.outputs[3])
         
-        
-        
-            
-        
+
         if not bool(obj.modifiers.get("Point Instancer")):
             mod = obj.modifiers.new('Point Instancer','NODES')
             mod.node_group = instance
@@ -461,7 +504,6 @@ def clean_mat(materials):
 
 now = time.time() #Time after it finished
 
-print(broken_block)
 print("It took: ", now-then, " seconds")
 
 
