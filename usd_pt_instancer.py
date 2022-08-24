@@ -5,7 +5,7 @@ import os,time
 from pprint import pprint
 from pxr import Usd, UsdGeom
 from mathutils import Matrix,Vector,Euler
-
+os.system('cls')
 then = time.time()
 
 #### USD functions ####
@@ -21,7 +21,6 @@ def read_path(file_path):
 
     blocklib_path = path[0]+'\\'+file_name+'_materials\\BlockLibrary.usda'
     world_name = os.path.basename(os.path.dirname(file_path))
-
 
     paths = {
         "file_path": file_path,
@@ -45,7 +44,6 @@ def read_usd(paths):
     block_ref = stage_ref.GetPrimAtPath(usd_blockpath+'/Blocks')
     voxel_ref = stage_ref.GetPrimAtPath(usd_worldpath)
     chunk_ref = voxel_ref.GetChildren()
-
 
     stage_dict = {
         "stage": stage_ref,
@@ -92,7 +90,7 @@ def read_chunk(usd_paths):
     return chunk_dict
 
 def read_block(usd_paths,chunks):
-    """Read through the blocks of the chunk
+    """Read through the blocks of the chunks
     'path' : reference mesh path
     'block' : block name in number form
     'name': block real name
@@ -150,86 +148,46 @@ def read_block(usd_paths,chunks):
 
 def read_mesh(usd_paths,blocks):
     """ Read the block mesh
-    'mesh' : mesh names of that blocks, some block can have multiple meshes  
-    'path': reference material path
-    'instance': mesh name for instancing, it has to iterate through a lot so slow
+    'block' : a list meshes of blocks, some blocks can have multiple meshes
+    'mesh' : a list of meshes used
+    'material': a list of materials used
+    'texture': a list of textures used and its path
     """
     stage = usd_paths.get("stage")
     usd_block_path = usd_paths.get("block_path")
-    block_path = blocks.get("path")
-    block_name = blocks.get("block")
+    usd_blocklib_path = usd_paths.get("blocklib")
 
-    mesh_dict = {
-        "mesh": [],
-        "path": [],
-        "instance": []
-    }
-    
-    for ib,blocks in enumerate(block_path):
-        _mesh = []
-        _instance = []
-        _material = []
-        for im,meshes in enumerate(blocks):
-            _grouped_block =[]  
-            for mesh in meshes:
-                child_name = str(mesh).split(str(usd_block_path))[1].split('>')[0]
-                child_path = str(usd_block_path)+child_name
-                _grouped_block.append(child_name)
-                child_material = stage.GetPrimAtPath(child_path)
-                _material.append(child_material)
-                if len(meshes) >= 2: # instance pick
-                    tmp_mesh = _grouped_block
-                    tmp_instance = block_name[ib][im]
-                else:
-                    tmp_mesh = child_name
-                    tmp_instance = child_name.split(block_name[ib][im])[1]
-                _mesh.append(tmp_mesh)
-                _instance.append(tmp_instance)
-            # print(tmp_block,_grouped_block)
-            mesh_dict['mesh'].append(_mesh)
-            mesh_dict['path'].append(_material)
-            mesh_dict['instance'].append(_instance)
-    return mesh_dict
-
-def read_material(usd_paths,meshes):
-    """
-    'path': reference all the material paths used
-    'diffuse': diffuse texture and path
-    'material': material name
-    
-    """
-    stage = usd_paths.get("stage")
-    usd_block_path = usd_paths.get("block_path")
-    material_path = meshes.get("path")
-    
-    _general_mat = []
-    _diffuse = []
     _material = []
-    for materials in material_path:
-        for material in materials:
-            mat_rel = material.GetRelationship('material:binding')
+    _block = []
+    _texture = []
+    _mesh = []
+    for blocks in usd_blocklib_path.GetChildren():
+        meshes = blocks.GetChildren()
+        for mesh in meshes:
+            child_name = str(mesh).split(str(usd_block_path))[1].split('>')[0]
+            child_path = str(usd_block_path)+child_name
+            child_material = stage.GetPrimAtPath(child_path)
+            # print(child_material)
+            mat_rel = child_material.GetRelationship('material:binding')
             mat = mat_rel.GetTargets()   
-            if not mat in _general_mat:
-                _general_mat.append(mat)
+            if not mat in _material and not mat == []:
+                material = str(mat).split('Looks')
+                material_path = usd_block_path+'/Blocks'+'/Looks'+material[1][:-3]
+                material_ref = stage.GetPrimAtPath(material_path+'/diffuse_texture')
+                diffuse = material_ref.GetProperty('inputs:file').Get()
 
-    for m in _general_mat:
-        material = str(m).split('Looks')
-        material_path = usd_block_path+'/Blocks'+'/Looks'+material[1][:-3]
-
-        material_ref = stage.GetPrimAtPath(material_path+'/diffuse_texture')
-        # print(material_ref.GetPropertyNames())
-        diffuse = material_ref.GetProperty('inputs:file').Get()
-        diffuse_path = material[1][:-3]
-        # print(' ')
-        _diffuse.append(diffuse)
-        _material.append(diffuse_path)
-
-    material_dict = {
-        "path": _general_mat,
-        "diffuse" : _diffuse,
-        "material" : _material
-    }  
-    return material_dict
+                _material.append(mat)
+                _texture.append(diffuse)
+            if not 'Looks' in str(mesh):
+                _mesh.append(mesh)
+        _block.append(meshes)
+    mesh_dict = {
+        "block": _block,
+        "mesh": _mesh,
+        "material": _material,
+        "texture": _texture
+    }
+    return mesh_dict
 
 ## adjacent function check if 2 points position is different only 1 axis
 def adjacent_point():
@@ -415,7 +373,7 @@ def create_asset():
         process = D.node_groups["Process"]
     return process
 
-def create_nodegroup(chunks,blocks,meshes):
+def create_nodegroup(chunks,blocks):
     """ Create a node group for instancing on the object"""
     chunks = chunks.get("chunks")
     block_instances = blocks.get("instance")
@@ -449,14 +407,12 @@ def create_nodegroup(chunks,blocks,meshes):
 
         for instances in block_instances:
             i = 0
-            print(instances)
             for block in reversed(instances):
                 try:
-                    name = block.lower().replace(' ','_')
+                    name = block.lower()
                     inst = D.objects[name]
                 except:
-                    name = block.strip('/')
-                    print(name)
+                    name = block.split('/')[1]
                     inst = D.objects[name+'_merge']
 
                 
@@ -513,6 +469,10 @@ def create_object(meshes,collection):
 #        else:
 #            pass
 
+def lprint(list):
+    for l in list:
+        print(l)
+
 def fix_material(materials):
     for mat in materials:
         try:
@@ -545,12 +505,9 @@ usd_paths = read_usd(paths)
 chunks = read_chunk(usd_paths)
 blocks = read_block(usd_paths,chunks)
 meshes = read_mesh(usd_paths,blocks)
-pprint(blocks.get("instance"))
-# mat = read_material(usd_paths,meshes)
+lprint(meshes.get("block"))
 
-blender = True
-
-os.system('cls')
+blender = False
 
 if blender:
     import bpy,bmesh
