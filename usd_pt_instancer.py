@@ -152,6 +152,7 @@ def read_mesh(usd_paths,blocks):
     'mesh' : a list of meshes used
     'material': a list of materials used
     'texture': a list of textures used and its path
+    'instance': a list of name for referencing instance
     """
     stage = usd_paths.get("stage")
     usd_block_path = usd_paths.get("block_path")
@@ -161,6 +162,7 @@ def read_mesh(usd_paths,blocks):
     _block = []
     _texture = []
     _mesh = []
+    _instance = []
     for blocks in usd_blocklib_path.GetChildren():
         meshes = blocks.GetChildren()
         for mesh in meshes:
@@ -180,12 +182,17 @@ def read_mesh(usd_paths,blocks):
                 _texture.append(diffuse)
             if not 'Looks' in str(mesh):
                 _mesh.append(mesh)
+                mesh_inst = str(mesh).split('/Blocks')[1]
+                block_inst = mesh_inst.split('/')
+                _instance.append([block_inst[1],block_inst[2].strip('>)')])
         _block.append(meshes)
+        
     mesh_dict = {
         "block": _block,
         "mesh": _mesh,
         "material": _material,
-        "texture": _texture
+        "texture": _texture,
+        "instance": _instance,
     }
     return mesh_dict
 
@@ -505,8 +512,6 @@ usd_paths = read_usd(paths)
 chunks = read_chunk(usd_paths)
 blocks = read_block(usd_paths,chunks)
 meshes = read_mesh(usd_paths,blocks)
-lprint(meshes.get("block"))
-
 blender = False
 
 if blender:
