@@ -1,6 +1,8 @@
 
-# An USD PointiInstancer addon implementation
+# An USD PointiInstancer addon implementation to import Minecraft world using Mineways
 ## Require pxr module from https://github.com/PixarAnimationStudios/USD
+
+> ## Mineways https://github.com/erich666/Mineways
 
 ### To use this you need to replace the path variable in the usd_pt_instancer.py
 
