@@ -11,15 +11,13 @@ then = time.time()
 #### USD functions ####
 def read_path(file_path):
     """Create needed paths for the USD to get
-    
-    
     """
     
     path = os.path.splitext(file_path)
     base = os.path.basename(file_path)
     file_name = os.path.splitext(base)[0]
 
-    blocklib_path = path[0]+'\\'+file_name+'_materials\\BlockLibrary.usda'
+    blocklib_path = path[0]+'\\'+file_name+'_materials\\BlockLibrary.usda' #might need to adjust this
     world_name = os.path.basename(os.path.dirname(file_path))
 
     paths = {
@@ -127,13 +125,13 @@ def read_block(usd_paths,chunks):
             _full_name.append(block_name)
             _name.append(name)
             id = block_name.split("/Block_")[1].split('_')
-            _id.append(id[0])
-            _sub_id.append(id[1])
+            _id.append(int(id[0]))
+            _sub_id.append(int(id[1]))
             _mesh.append(child_mesh)
             if len(child_mesh) >= 2: # instance pick 
-                tmp_instance = block_name
+                tmp_instance = [1,block_name]
             else:
-                tmp_instance = name
+                tmp_instance = [0,block_name]
             _instance.append(tmp_instance)
         # print(full_name)
         block_dict['block'].append(_full_name)
@@ -162,7 +160,7 @@ def read_mesh(usd_paths,blocks):
     _block = []
     _texture = []
     _mesh = []
-    _instance = []
+    _instance = {}
     for blocks in usd_blocklib_path.GetChildren():
         meshes = blocks.GetChildren()
         for mesh in meshes:
@@ -184,7 +182,7 @@ def read_mesh(usd_paths,blocks):
                 _mesh.append(mesh)
                 mesh_inst = str(mesh).split('/Blocks')[1]
                 block_inst = mesh_inst.split('/')
-                _instance.append([block_inst[1],block_inst[2].strip('>)')])
+                _instance[block_inst[1]] = block_inst[2].strip('>)')
         _block.append(meshes)
         
     mesh_dict = {
@@ -227,14 +225,41 @@ def create_pts(paths,chunks,blocks):
             mesh = D.meshes.new(mesh_name)  # add the new 
         else:
             mesh = D.meshes[mesh_name]
+            D.meshes.remove(mesh,do_unlink=True) 
+            mesh = D.meshes.new(mesh_name)
+            
+        a = np.array(points[ic])
+        a[:,[1, 2]] = a[:,[2, 1]] #swaping Y and Z 
+#        e = a
+        verts = np.concatenate([np.array(i) for i in a])
+        
+    
+        num_vertices = verts.shape[0] // 3    
+        
+        mesh.vertices.add(num_vertices)
+        mesh.vertices.foreach_set("co", verts)
+        
+        ins = indicies[ic]
+        blo = [id[ic][i] for i in ins]
+        sub = [sub_id[ic][i] for i in ins]
+        ins_index = mesh.vertex_layers_int.new(name="instance_index")
+        blo_index = mesh.vertex_layers_int.new(name="block_index")
+        nbt_index = mesh.vertex_layers_int.new(name="nbt_index")
+        ins_index.data.foreach_set("value", ins)
+        blo_index.data.foreach_set("value", blo)
+        nbt_index.data.foreach_set("value", sub)
+        
+        vertices = np.zeros(len(mesh.vertices) * 3,dtype=np.int32)
+        mesh.vertices.foreach_get("co", vertices)
+        vertices = vertices.reshape(-1,3)
 
         bm = bmesh.new()   
         bm.from_mesh(mesh)   
         
-        l= bm.verts.layers.int.new("instance_index")
-        p= bm.verts.layers.int.new("block_index")
-        n= bm.verts.layers.int.new("nbt_index")
-        a = np.array(points[ic])
+#        l= bm.verts.layers.int.new("instance_index")
+#        p= bm.verts.layers.int.new("block_index")
+#        n= bm.verts.layers.int.new("nbt_index")
+
         # print(a)
 #        for ip,point in a:
 #            print(point)
@@ -250,6 +275,10 @@ def create_pts(paths,chunks,blocks):
 
         bm.to_mesh(mesh)
         bm.free()
+        
+        mesh.update()
+        mesh.validate()
+        
         object_mesh.append(mesh)
     return object_mesh
 
@@ -277,63 +306,85 @@ def create_usd_collection(paths):
     Example: Grass Block is Block_2_0 need to merge all meshes
     dirt,grass_block_side,grass_block_top into one """
     # Create the USD collections
-    file_name = paths.get("file_name")
     collections = []
-    usd_col = create_collection(file_name + " USD Collection",)
-    pt_col = create_collection(file_name + " USD Points")
-    block_col = create_collection(file_name + " USD BlockLib")
+    file_name = paths.get("file_name")
+    world_name = paths.get("world_name")
+    
+    usd_col = create_collection(file_name + " USD Collection")
+    pt_col = create_collection(file_name + " USD Points",usd_col)
+    block_col = create_collection(file_name + " USD BlockLib",usd_col)
     
     collections.append([usd_col,pt_col,block_col])
     
-    bpy.ops.wm.usd_import(filepath=filePath,import_usd_preview=True)
+    if not bool(D.objects.get(file_name +' Blocks')):
+        bpy.ops.wm.usd_import(filepath=filePath,import_usd_preview=True)
+        
+        objs = C.selected_objects
+        moveto_collection(objs,block_col)
     
-    objs = C.selected_objects
-    moveto_collection(objs,block_col)
-    
-    #Fix all the block merge and apply 
-    block_objs = block_col.objects['Blocks'].children_recursive
-    rot = Matrix.Rotation(math.radians(90),4,'X')
-    loc = Matrix.Translation((-0.5,-0.5,-0.5))
-    
-    new_i = 0
-    for i,obj in enumerate(block_objs):
-        pre_loc = Matrix.Translation((new_i,0,0))
-        try:
-            if obj.type != 'MESH' and 'Block' in obj.name:
-                merge_mesh = D.meshes.new(obj.name + '_merge')
-                merge_obj = D.objects.new(merge_mesh.name, merge_mesh)
-                merge_obj.parent = obj.parent
-                merge_obj.location = obj.location
-                col = obj.users_collection[0]
-                col.objects.link(merge_obj)
-                
-                bpy.ops.object.select_all(action='DESELECT')
-                bpy.context.view_layer.objects.active = merge_obj
-                merge_obj.select_set(True)
-                for children_mesh in obj.children:
-                    children_mesh.select_set(True)
-                
-                D.objects.remove(obj,do_unlink=True)                
-                bpy.ops.object.join()
-                
-                ma = rot @ loc
-                me = merge_obj.data
-                me.transform(ma)
-                
-                merge_obj.matrix_world = pre_loc
-            elif obj.type == 'MESH':
-                
-                ma = rot @ loc
-                me = obj.data
-                me.transform(ma)
-                
-                obj.matrix_world = pre_loc
-        except: # Except broken cause by previous merge RNA blocks
-            new_i-=1
-            pass
-        new_i+=1
-    
-    fix_material(D.materials)
+        #Fix all the block merge and apply 
+        block_objs = block_col.objects['Blocks'].children_recursive
+        rot = Matrix.Rotation(math.radians(90),4,'X')
+        loc = Matrix.Translation((-0.5,-0.5,-0.5))
+        
+        path = ['Looks','Blocks','VoxelMap',world_name.replace(' ','_')]
+
+        if D.objects[path[2]]:
+            for child in D.objects[path[2]].children_recursive:
+                D.objects.remove(child,do_unlink=True)
+            D.objects.remove(D.objects[path[2]],do_unlink=True)
+        for obj in D.objects:
+            if obj.name in path and not 'Block' in obj.name:
+                for child in obj.children_recursive:
+                    child.name = file_name + ' '+ child.name
+                obj.name =  file_name + ' '+obj.name
+        if bool(D.objects.get('Blocks')):
+            obj = D.objects['Blocks']  
+            obj.name =  file_name + ' '+obj.name
+
+        new_i = 0
+        row = 0
+        column = 0
+        for i,obj in enumerate(block_objs):
+        
+            pre_loc = Matrix.Translation((row,-2,column))
+            try:
+                if obj.type != 'MESH' and 'Block' in obj.name:
+                    merge_mesh = D.meshes.new(obj.name + '_merge')
+                    merge_obj = D.objects.new(merge_mesh.name, merge_mesh)
+                    merge_obj.parent = obj.parent
+                    merge_obj.location = obj.location
+                    col = obj.users_collection[0]
+                    col.objects.link(merge_obj)
+                    
+                    bpy.ops.object.select_all(action='DESELECT')
+                    bpy.context.view_layer.objects.active = merge_obj
+                    merge_obj.select_set(True)
+                    for children_mesh in obj.children:
+                        children_mesh.select_set(True)
+                    
+                    D.objects.remove(obj,do_unlink=True)                
+                    bpy.ops.object.join()
+                    
+                    ma = rot @ loc
+                    me = merge_obj.data
+                    me.transform(ma)
+                    
+                    merge_obj.matrix_world = pre_loc
+                elif obj.type == 'MESH':
+                    
+                    ma = rot @ loc
+                    me = obj.data
+                    me.transform(ma)
+                    
+                    obj.matrix_world = pre_loc
+            except: # Except broken cause by previous merge RNA blocks
+                new_i-=1
+                pass
+            new_i+=1
+            row = new_i % 16
+            column = math.floor(new_i / 16)
+        fix_material(D.materials)
     return collections
 
 def create_asset():
@@ -379,13 +430,14 @@ def create_asset():
     else:
         process = D.node_groups["Process"]
     return process
-
+broke = []
 def create_nodegroup(chunks,blocks):
     """ Create a node group for instancing on the object"""
     chunks = chunks.get("chunks")
     block_instances = blocks.get("instance")
+    mesh_instances = meshes.get("instance")
     node_groups = []
-    for chunk in chunks:
+    for ic,chunk in enumerate(chunks):
         nodegroup_name = chunk.split('/')[1]
         if not bool(D.node_groups.get(nodegroup_name)):
             instance = D.node_groups.new(chunk.split('/')[1],'GeometryNodeTree')
@@ -409,31 +461,35 @@ def create_nodegroup(chunks,blocks):
             frame_block = instance.nodes[nodegroup_name+'_Blocks']
 
         for node in instance.nodes:
-            if node.type == 'GeometryNodeObjectInfo':
+            if node.type == 'OBJECT_INFO':
                 instance.nodes.remove(node)
-
-        for instances in block_instances:
-            i = 0
-            for block in reversed(instances):
+        i=0
+        for block in reversed(block_instances[ic]):
+            if block[0] == 0:
+                name = mesh_instances[block[1].strip('/')]   
+            else:
+                name = block[1].strip('/') + "_merge"
+            try:
+                inst = D.objects[name]
+            except:
                 try:
-                    name = block.lower()
-                    inst = D.objects[name]
+                    inst = D.objects[name+'.001']
                 except:
-                    name = block.split('/')[1]
-                    inst = D.objects[name+'_merge']
+                    inst = D.objects['Empty']
+                    broke.append(name)
 
                 
-                block_node = instance.nodes.new('GeometryNodeObjectInfo')
-                block_node.name = inst.name
-                block_node.label = inst.name
-                block_node.hide = True
-                block_node.location = (-500,-500+i)
-                block_node.inputs[1].default_value = True
-                block_node.parent = frame_block
-                instance.links.new(join_block.inputs[0],block_node.outputs[3])
-                i+=50
-                if inst.type == 'MESH':
-                    block_node.inputs[0].default_value = inst
+            block_node = instance.nodes.new('GeometryNodeObjectInfo')
+            block_node.name = inst.name
+            block_node.label = inst.name
+            block_node.hide = True
+            block_node.location = (-500,-500+i)
+            block_node.inputs[1].default_value = True
+            block_node.parent = frame_block
+            instance.links.new(join_block.inputs[0],block_node.outputs[3])
+            i+=50
+            if inst.type == 'MESH':
+                block_node.inputs[0].default_value = inst
         
         if not bool(instance.nodes.get("Process")):
             process_group = instance.nodes.new("GeometryNodeGroup")
@@ -449,7 +505,7 @@ def create_nodegroup(chunks,blocks):
             instance.links.new(process_group.inputs[3],in_instance.outputs[2])
             instance.links.new(process_group.inputs[4],in_instance.outputs[3])
         node_groups.append(instance)
-    return instances
+    return node_groups
 
 def create_object(meshes,collection):
     """Create the object and apply the point instancing node group"""
@@ -462,19 +518,19 @@ def create_object(meshes,collection):
             # obj.matrix_world = d
         else:
             obj = D.objects[object_name]
-        print(instances[im])
-#        if not bool(obj.modifiers.get("Point Instancer")):
-#            mod = obj.modifiers.new('Point Instancer','NODES')
+#        print(instances[im])
+        if not bool(obj.modifiers.get("Point Instancer")):
+            mod = obj.modifiers.new('Point Instancer','NODES')
             
-#            mod.node_group = instance[im]
-#            mod["Input_2_use_attribute"] = True 
-#            mod["Input_2_attribute_name"] = "instance_index"
-#            mod["Input_3_use_attribute"] = True 
-#            mod["Input_3_attribute_name"] = "block_index"
-#            mod["Input_4_use_attribute"] = True 
-#            mod["Input_4_attribute_name"] = "nbt_index"
-#        else:
-#            pass
+            mod.node_group = node_groups[im]
+            mod["Input_2_use_attribute"] = True 
+            mod["Input_2_attribute_name"] = "instance_index"
+            mod["Input_3_use_attribute"] = True 
+            mod["Input_3_attribute_name"] = "block_index"
+            mod["Input_4_use_attribute"] = True 
+            mod["Input_4_attribute_name"] = "nbt_index"
+        else:
+            pass
 
 def lprint(list):
     for l in list:
@@ -503,24 +559,44 @@ def clean_image(images):
 def clean_obj(objs):
     for obj in objs:
         D.objects.remove(obj,do_unlink=True) 
+        
+def clean_collection(collection):
+    cols = collection.children_recursive
+    for col in cols:
+        objs = col.objects
+        for obj in objs:
+            D.objects.remove(obj,do_unlink=True) 
+        D.collections.remove(col,do_unlink=True) 
+    D.collections.remove(collection,do_unlink=True)
 
 
-filePath = 'D:\\Forge modding\\ModDev\\run\\saves\\modd 4\\modd.usda'
+filePath = '\path' # add your path here
 
 paths = read_path(filePath)
 usd_paths = read_usd(paths)
 chunks = read_chunk(usd_paths)
 blocks = read_block(usd_paths,chunks)
 meshes = read_mesh(usd_paths,blocks)
+
 blender = False
+clean = False # don't touch
+try:
+    import bpy
+    blender = True
+except:
+    pass
 
 if blender:
-    import bpy,bmesh
+    import bmesh
     D = bpy.data
     C = bpy.context
+    if clean:
+        file_name = paths.get("file_name")
+        clean_collection(D.collections[file_name + " USD Collection"])
+    
     process = create_asset()
     collections = create_usd_collection(paths)
-    instances = create_nodegroup(chunks,blocks)
+    node_groups = create_nodegroup(chunks,blocks)
 
     point_collection = collections[0][1]
     object_mesh = create_pts(paths,chunks,blocks)
