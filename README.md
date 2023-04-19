@@ -1,20 +1,19 @@
 
-# An USD PointiInstancer addon implementation to import Minecraft world using Mineways
-# From 3.5 Blender has exposed pxr usd Python bindings
+## USD Pointinstancer addon importer Minecraft world for Mineways
 
-> ## Mineways https://github.com/erich666/Mineways
-> Use a specific build of Mineways in the meantime
 
-### To use this you need to replace the path variable in the usd_pt_instancer.py
+> ### Mineways 
+> https://github.com/erich666/Mineways
+>
+> In the meantime still need some tweaks
 
-> ### **TODO** 
+> #### **TODO** 
 > 
-> Seperate USD function and Blender function 
+> Seperate USD function and Blender IO functions, UI
 > 
 
-> 
-> Add numpy implementation for near points edge connect base on distance.
- 
-> ### **More info**
-> 
+> #### **Useful references for making this**
+>  
 >  https://graphics.pixar.com/usd/release/tut_usd_tutorials.html
+>
+>  https://developer.nvidia.com/usd/tutorials
