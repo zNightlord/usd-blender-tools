@@ -1,5 +1,48 @@
+import bpy
+import numpy as np
+
 #### Blender functions start here ####
-def create_pts(paths,chunks,blocks):
+class BlendHeleper:
+  def clean_mesh(meshes):
+      for mesh in meshes:
+          D.meshes.remove(mesh,do_unlink=True)
+  
+  def clean_mat(materials):
+      for material in materials:
+          D.materials.remove(material,do_unlink=True)   
+  
+  def clean_image(images):
+      for img in images:
+          D.images.remove(img,do_unlink=True)   
+  
+  def clean_obj(objs):
+      for obj in objs:
+          D.objects.remove(obj,do_unlink=True) 
+          
+  def clean_collection(collection):
+      cols = collection.children_recursive
+      for col in cols:
+          objs = col.objects
+          for obj in objs:
+              D.objects.remove(obj,do_unlink=True) 
+          D.collections.remove(col,do_unlink=True) 
+      D.collections.remove(collection,do_unlink=True)
+      
+  def fix_material(materials):
+      for mat in materials:
+          try:
+              img = mat.node_tree.nodes["Image Texture"]
+              img.interpolation = 'Closest'
+          except:
+              pass
+      
+class ImportPointInstancer:
+  def __init__(self):
+    self.paths = 
+    self.chunks = 
+    self.blocks = 
+    
+  def create_pts(paths,chunks,blocks):
     """Create points with attributes"""
     file_name = paths.get("file_name")  # file name
     ch = chunks.get("chunks")       # chunks
@@ -20,7 +63,7 @@ def create_pts(paths,chunks,blocks):
             
         a = np.array(points[ic])
         a[:,[1, 2]] = a[:,[2, 1]] #swaping Y and Z 
-#        e = a
+        # e = a
         verts = np.concatenate([np.array(i) for i in a])
         
     
@@ -46,22 +89,22 @@ def create_pts(paths,chunks,blocks):
         bm = bmesh.new()   
         bm.from_mesh(mesh)   
         
-#        l= bm.verts.layers.int.new("instance_index")
-#        p= bm.verts.layers.int.new("block_index")
-#        n= bm.verts.layers.int.new("nbt_index")
+        # l= bm.verts.layers.int.new("instance_index")
+        # p= bm.verts.layers.int.new("block_index")
+        # n= bm.verts.layers.int.new("nbt_index")
 
         # print(a)
-#        for ip,point in a:
-#            print(point)
-#            v1 = bm.verts.new(point)
-#            bm.verts.ensure_lookup_table()
-#            bm.verts[ip][l] = indicies[ip]
-#            bm.verts[ip][p] = id[indicies[ip]]
-#            bm.verts[ip][n] = sub_id[indicies[ip]]
-#            for v2 in bm.verts:
-#                diff = abs(v1.co[0] - v2.co[0]) + abs(v1.co[1] - v2.co[1]) + abs(v1.co[2] - v2.co[2])
-#                if diff == 1 and not v1 == v2:
-#                    e = bm.edges.new([v1, v2])
+        # for ip,point in a:
+        # print(point)
+        # v1 = bm.verts.new(point)
+        # bm.verts.ensure_lookup_table()
+        # bm.verts[ip][l] = indicies[ip]
+        # bm.verts[ip][p] = id[indicies[ip]]
+        # bm.verts[ip][n] = sub_id[indicies[ip]]
+        # for v2 in bm.verts:
+        #        diff = abs(v1.co[0] - v2.co[0]) + abs(v1.co[1] - v2.co[1]) + abs(v1.co[2] - v2.co[2])
+        #        if diff == 1 and not v1 == v2:
+        #             e = bm.edges.new([v1, v2])
 
         bm.to_mesh(mesh)
         bm.free()
@@ -72,7 +115,7 @@ def create_pts(paths,chunks,blocks):
         object_mesh.append(mesh)
     return object_mesh
 
-def create_collection(name,parent = None):
+  def create_collection(name,parent = None):
     #Create collection, if exist get it.
     if not bool(D.collections.get(name)):
         collection =  D.collections.new(name)
@@ -84,14 +127,14 @@ def create_collection(name,parent = None):
         collection = D.collections[name]
     return collection
 
-def moveto_collection(objects,collection):
+  def moveto_collection(objects,collection):
     # Unlink objects in all collection, link it to new one 
     for obj in objects:
         for col in obj.users_collection:
             col.objects.unlink(obj) 
         collection.objects.link(obj)
 
-def create_usd_collection(paths):
+  def create_usd_collection(paths):
     """ Create collection to store usd and fix merged blocks
     Example: Grass Block is Block_2_0 need to merge all meshes
     dirt,grass_block_side,grass_block_top into one """
@@ -177,7 +220,7 @@ def create_usd_collection(paths):
         fix_material(D.materials)
     return collections
 
-def create_asset():
+  def create_asset():
     """Create node group assets """
     if not bool(D.node_groups.get("Post_Surface")):
         surface = D.node_groups.new('Post_Surface','GeometryNodeTree')
@@ -220,8 +263,8 @@ def create_asset():
     else:
         process = D.node_groups["Process"]
     return process
-broke = []
-def create_nodegroup(chunks,blocks):
+  broke = []
+  def create_nodegroup(chunks,blocks):
     """ Create a node group for instancing on the object"""
     chunks = chunks.get("chunks")
     block_instances = blocks.get("instance")
@@ -297,7 +340,7 @@ def create_nodegroup(chunks,blocks):
         node_groups.append(instance)
     return node_groups
 
-def create_object(meshes,collection):
+  def create_object(meshes,collection):
     """Create the object and apply the point instancing node group"""
     for im,mesh in enumerate(meshes):
         object_name  = mesh.name
@@ -308,7 +351,7 @@ def create_object(meshes,collection):
             # obj.matrix_world = d
         else:
             obj = D.objects[object_name]
-#        print(instances[im])
+        # print(instances[im])
         if not bool(obj.modifiers.get("Point Instancer")):
             mod = obj.modifiers.new('Point Instancer','NODES')
             
@@ -322,39 +365,14 @@ def create_object(meshes,collection):
         else:
             pass
 
-def lprint(list):
-    for l in list:
-        print(l)
 
-def fix_material(materials):
-    for mat in materials:
-        try:
-            img = mat.node_tree.nodes["Image Texture"]
-            img.interpolation = 'Closest'
-        except:
-            pass
 
-def clean_mesh(meshes):
-    for mesh in meshes:
-        D.meshes.remove(mesh,do_unlink=True)
 
-def clean_mat(materials):
-    for material in materials:
-        D.materials.remove(material,do_unlink=True)   
-
-def clean_image(images):
-    for img in images:
-        D.images.remove(img,do_unlink=True)   
-
-def clean_obj(objs):
-    for obj in objs:
-        D.objects.remove(obj,do_unlink=True) 
-        
-def clean_collection(collection):
-    cols = collection.children_recursive
-    for col in cols:
-        objs = col.objects
-        for obj in objs:
-            D.objects.remove(obj,do_unlink=True) 
-        D.collections.remove(col,do_unlink=True) 
-    D.collections.remove(collection,do_unlink=True)
+### Operator
+class MCU_Base:
+  use_new_blocklib: BoolProperty()
+  use_new_material: BoolProperty()
+  disable_instance: BoolProperty()
+  
+class MCU_OT_ImportWorld(bpy.types.Operator, ImportHelper, MCU_Base):
+  bl_idname = ""
