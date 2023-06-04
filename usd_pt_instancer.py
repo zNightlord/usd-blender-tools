@@ -4,8 +4,8 @@ import os,time
 from pprint import pprint
 from pxr import (Usd, UsdGeom, UsdPrim)
 from mathutils import Matrix,Vector,Euler
-os.system('cls')
-then = time.time()
+
+
 
 class USDMinewaysFile(): 
   def __init__(self, path:str) -> None:
@@ -36,7 +36,7 @@ class USDMinewaysFile():
     )
     
   def __repr__(self) -> str:
-    return (f"a")
+    return __str__(self)
 
 class USDPxr():
 

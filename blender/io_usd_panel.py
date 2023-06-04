@@ -4,16 +4,20 @@ from bl_ui.generic_ui_list import draw_ui_list
 from .io_usd_import import MCU_OT_ImportWorld
 
 class MCU_Instance_Block(bpy.types.PropertyGroup):
+  """ Block info"""
   def update(self, context):
     obj = context.obj
     mods = context.modifiers
     mod = mods.get("MCU")
+  
   block: bpy.types.PointerProperty(type=bpy.types.Object, update = update)
+  block_id: bpy.props.IntProperty(name = "Block ID", default = 0)
+  block_nbt_id: bpy.props.IntProperty(name = "Block NBT ID", default = 0)
   
   
 class MCU_Instance_Object(bpy.types.PropertyGroup):
   blocks: bpy.types.CollectionProperty(type=MCU_Instance_Block)
-  block_index: bpy.types.IntProperty()
+  block_index: bpy.props.IntProperty(name = "Block Index")
 
 class MCU_UL_OBJ(bpy.types.UIList):
     bl_idname = "MCU_UL_OBJ"
