@@ -1,15 +1,20 @@
 bl_info = {
-    "name": "VoxelDraw",
-    "author": "Sreeraj R",
-    "version": (1, 0),
-    "blender": (2, 83, 0),
-    "location": "View3D > Edit Mode > Toolbar",
-    "description": "Draw Voxel mesh in Edit Mode",
-    "warning": "Made purely for fun, don't expect stuff to work ;)",
+    "name": "MCUSD importer",
+    "author": "Trung Phạm (zNight)",
+    "version": (0, 0, 1),
+    "blender": (3, 5, 0),
+    "location": "View3D > N Panel",
+    "description": "Import Mineways USD (usda) format",
+    "warning": "",
     "doc_url": "",
-    "category": "Add Mesh",
+    "category": "IO",
 }
 
 from .blender import io_usd_import
 from .blender import io_usd_panel
 
+def register():
+  ...
+  
+def unregister():
+  ...

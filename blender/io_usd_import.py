@@ -106,7 +106,7 @@ class Points:
     self.collections: List[Collection] = []
     
   def create_pts(paths,chunks,blocks):
-    """Create points with attributes"""
+    """Create mesh points with attributes"""
     file_name = paths.get("file_name")  # file name
     ch = chunks.get("chunks")       # chunks
     points = chunks.get("points")       # points position
@@ -178,10 +178,6 @@ class Points:
         
         object_mesh.append(mesh)
     return object_mesh
-
-  
-
-  
 
   def create_usd_collection(self):
     """ Create collection to store usd and fix merged blocks
