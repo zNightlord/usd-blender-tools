@@ -1,15 +1,3 @@
-bl_info = {
-    "name": "VoxelDraw",
-    "author": "Sreeraj R",
-    "version": (1, 0),
-    "blender": (2, 83, 0),
-    "location": "View3D > Edit Mode > Toolbar",
-    "description": "Draw Voxel mesh in Edit Mode",
-    "warning": "Made purely for fun, don't expect stuff to work ;)",
-    "doc_url": "",
-    "category": "Add Mesh",
-}
-    
 import bpy
 from bpy_extras.view3d_utils import region_2d_to_location_3d, region_2d_to_vector_3d, region_2d_to_origin_3d
 

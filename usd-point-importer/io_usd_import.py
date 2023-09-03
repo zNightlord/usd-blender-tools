@@ -1,11 +1,11 @@
 import bpy
+from bpy.types import Nodes, Node
+from bpy.utils import register_class, unregister_class
+
 import numpy as np
+
+from .usd import USDMinewaysFile, USDMinewaysStage
 from . import util
-
-from .usd import USDMinewaysFile
-
-D = bpy.data
-C = bpy.context
 
 #### Blender functions start here ####
 class BlendHeleper:
@@ -58,7 +58,7 @@ class BlendHeleper:
       return collection
 
 class NodeUtilityMixin:
-  nodes: Nodez
+  nodes: Nodes
   
   def create_nodes(self, bl_idname, **attrs) -> Node:
     return util.create_nodes(self.nodes, bl_idname, **attrs)
@@ -66,18 +66,6 @@ class NodeUtilityMixin:
   def connect_sockets(self, input_socket, output_socket):
     if util.min_bv((3,6,0)):
       print("TODO")
-      
-  def new_group_socket(self, socket_type, socket_name, is_input = True):
-    if not self.is_nodegroup:
-      for n in self.node_tree.nodes:
-        if n.bl_idname in ['NodeGroupInput', 'NodeGroupOutput']
-          self.is_nodegroup = True
-    else:
-      if is_input:
-        self.node_tree.inputs.new(type= socket_type, name= socket_name)
-      else:
-        self.node_tree.outputs.new(type= socket_type, name= socket_name)
-      
     
     
   
@@ -153,23 +141,6 @@ class Points:
         bm = bmesh.new()   
         bm.from_mesh(mesh)   
         
-        # l= bm.verts.layers.int.new("instance_index")
-        # p= bm.verts.layers.int.new("block_index")
-        # n= bm.verts.layers.int.new("nbt_index")
-
-        # print(a)
-        # for ip,point in a:
-        # print(point)
-        # v1 = bm.verts.new(point)
-        # bm.verts.ensure_lookup_table()
-        # bm.verts[ip][l] = indicies[ip]
-        # bm.verts[ip][p] = id[indicies[ip]]
-        # bm.verts[ip][n] = sub_id[indicies[ip]]
-        # for v2 in bm.verts:
-        #        diff = abs(v1.co[0] - v2.co[0]) + abs(v1.co[1] - v2.co[1]) + abs(v1.co[2] - v2.co[2])
-        #        if diff == 1 and not v1 == v2:
-        #             e = bm.edges.new([v1, v2])
-
         bm.to_mesh(mesh)
         bm.free()
         
@@ -445,3 +416,13 @@ class MCU_OT_UpdateChunk(bpy.types.Operator)
   
   def execute(self, context):
     print("TODO")
+    
+    
+classes = (
+  
+)
+
+def register():
+  
+def unregister():
+  

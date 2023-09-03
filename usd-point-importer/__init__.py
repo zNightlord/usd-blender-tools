@@ -10,11 +10,17 @@ bl_info = {
     "category": "IO",
 }
 
-from .blender import io_usd_import
-from .blender import io_usd_panel
+mcprep_info = {
+  "name": "MCUSD importer"
+}
+
+from . import io_usd_import
+from . import io_usd_ui
 
 def register():
-  ...
+  io_usd_import.register()
+  io_usd_ui.register()
   
 def unregister():
-  ...
+  io_usd_import.register()
+  io_usd_ui.register()
