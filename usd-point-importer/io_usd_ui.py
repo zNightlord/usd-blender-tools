@@ -53,7 +53,7 @@ class MCU_PT_BASE_Panel(bpy.types.Panel):
             list_context_path="context.object.minecraft_usd.blocks",
             active_index_context_path="context.object.minecraft_usd.block_index"
         )
-        if len(blocks):
+        if blocks:
           active_block = blocks[block_index]
           col.prop(active_block, "block")
           mats = active_block.block.data.materials

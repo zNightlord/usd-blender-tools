@@ -2,7 +2,7 @@ import bpy
 import numpy as np
 from . import util
 
-from ..usd_pt_instancer import USDMinewaysFile
+from .usd import USDMinewaysFile
 
 D = bpy.data
 C = bpy.context
@@ -44,6 +44,7 @@ class BlendHeleper:
                   imgNode.interpolation = 'Closest'
           except:
               pass
+            
   def create_collection(name,parent = None):
       """ Use util  
       Create collection, if exist get it."""
@@ -57,11 +58,10 @@ class BlendHeleper:
       return collection
 
 class NodeUtilityMixin:
-  node_tree: NodeTree
-  is_nodegroup: bool = False
+  nodes: Nodez
   
   def create_nodes(self, bl_idname, **attrs) -> Node:
-    return util.create_nodes(self.node_tree.nodes, bl_idname, **attrs)
+    return util.create_nodes(self.nodes, bl_idname, **attrs)
   
   def connect_sockets(self, input_socket, output_socket):
     if util.min_bv((3,6,0)):
@@ -107,12 +107,12 @@ class Points:
     
   def create_pts(paths,chunks,blocks):
     """Create mesh points with attributes"""
-    file_name = paths.get("file_name")  # file name
-    ch = chunks.get("chunks")       # chunks
-    points = chunks.get("points")       # points position
-    indicies = chunks.get("indices")    # instance index
-    id =  blocks.get("id")              # block index
-    sub_id =  blocks.get("sub_id")      # block nbt index
+    file_name = self.paths.get("file_name")  # file name
+    ch = self.chunks.get("chunks")       # chunks
+    points = self.chunks.get("points")       # points position
+    indicies = self.chunks.get("indices")    # instance index
+    id = self.blocks.get("id")              # block index
+    sub_id =  self.blocks.get("sub_id")      # block nbt index
     
     object_mesh = []
     for ic,chunk in enumerate(ch):
@@ -381,29 +381,30 @@ class PointInstance(NodeUtilityMixin):
               node_tree = process
             )
 
-            self.connect_sockets(out_instance.inputs[0],process_group.outputs[0])
-            self.connect_sockets(process_group.inputs[1],join_block.outputs[0])
+            self.connect_sockets(out_instance.inputs[0], process_group.outputs[0])
+            self.connect_sockets(process_group.inputs[1], join_block.outputs[0])
             
-            self.connect_sockets(process_group.inputs[0],in_instance.outputs[0])
-            self.connect_sockets(process_group.inputs[2],in_instance.outputs[1])
-            self.connect_sockets(process_group.inputs[3],in_instance.outputs[2])
-            self.connect_sockets(process_group.inputs[4],in_instance.outputs[3])
+            self.connect_sockets(process_group.inputs[0], in_instance.outputs[0])
+            self.connect_sockets(process_group.inputs[2], in_instance.outputs[1])
+            self.connect_sockets(process_group.inputs[3], in_instance.outputs[2])
+            self.connect_sockets(process_group.inputs[4], in_instance.outputs[3])
         node_groups.append(instance)
     return node_groups
 
-  def create_object(self, meshes,collection):
+  def create_object(self):
     """Create the object and apply the point instancing node group"""
+    meshes = self.meshes
+    collection = self.collection
     for im,mesh in enumerate(meshes):
-        object_name  = mesh.name
-        if not bool(D.objects.get(mesh.name)):
+        
+        obj = D.objects.get(mesh.name)
+        if not obj:
             obj = D.objects.new(mesh.name, mesh)
             collection.objects.link(obj)
             # d = Matrix.Rotation(math.radians(90),4,'X')
             # obj.matrix_world = d
-        else:
-            obj = D.objects[object_name]
-        # print(instances[im])
-        if not bool(obj.modifiers.get("Point Instancer")):
+        
+        if not obj.modifiers.get("Point Instancer"):
             mod = create_modifier(obj, 'NODES', 
               name = "Point Instancer", 
               node_group = node_groups[im],

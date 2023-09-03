@@ -48,8 +48,6 @@ def moveto_collection(objects,collection):
         for col in obj.users_collection:
             col.objects.unlink(obj) 
         collection.objects.link(obj)
-
-
   
 def getobj_coll(obj):
   """Return the first collection of the objecf and collection list"""
@@ -350,7 +348,6 @@ def create_nodegroup_tree(name:str, type:str) -> NodeTree:
 
 def load_resource(path, node_type):
   nodegroup = []
-  """TODO append when needed """
   data = bpy.data
   node_group = data.node_groups.get(node_type)
   if not node_group or node_type in ["EFX_Curve", "EFX_ColorLGG"]:

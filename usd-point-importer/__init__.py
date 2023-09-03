@@ -4,7 +4,7 @@ bl_info = {
     "version": (0, 0, 1),
     "blender": (3, 5, 0),
     "location": "View3D > N Panel",
-    "description": "Import Mineways USD (usda) format",
+    "description": "Custom Mineways USD (usda) format imported",
     "warning": "",
     "doc_url": "",
     "category": "IO",
