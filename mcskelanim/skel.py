@@ -86,7 +86,7 @@ class UsdRigWrite:
     (sxx2+sxy2, 1-syz), (sxx2+sxy, 1-syz), (sxx2+sxy, 1-(syz+syy)), (sxx2+sxy2, 1-(syz+syy)), # South
     (sxx, 1-sxz), (sxx+sxy, 1-syz), (sxx+sxy, 1), (sxx, 1), # Top
     (sxx+sxy, 1), (sxx2+sxy, 1), (sxx2+sxy, 1-syz), (sxx+sxy, 1-syz), # Down
-    (sxx2+sxy, 1-syz), (sxx+sxy, 1-syz)), (sxx+sxy, 1-(syz+syy)), (sxx2+sxy, 1-(syz+syy)), # West
+    (sxx2+sxy, 1-syz), (sxx+sxy, 1-syz), (sxx+sxy, 1-(syz+syy)), (sxx2+sxy, 1-(syz+syy)), # West
     (sxx, 1-sxz), (0, 1-sxz), (0, 1-(syz+syy)), (sxx, 1-(syz+syy)) # East
     ]
     for i, v in enumerate(verts):
