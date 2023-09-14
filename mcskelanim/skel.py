@@ -86,7 +86,13 @@ class UsdRigWrite:
       1, 5, 6, 2]
     count = [4] * 6
     normal = [(0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)]
-  
+    
+    sxx= sx*x
+    sxy= sx*y
+    syy = sy*y
+    syz = sy*z
+    sxx2 = sxx*2
+    sxy2 = sxy*2
     uv = [
     (sxx+sxy, 1-syz), (sxx, 1-syz), (sxx, 1-(syz+syy)), (sxx+sxy, 1-(syz+syy)), # North
     (sxx2+sxy2, 1-syz), (sxx2+sxy, 1-syz), (sxx2+sxy, 1-(syz+syy)), (sxx2+sxy2, 1-(syz+syy)), # South
@@ -95,6 +101,7 @@ class UsdRigWrite:
     (sxx2+sxy, 1-syz), (sxx+sxy, 1-syz), (sxx+sxy, 1-(syz+syy)), (sxx2+sxy, 1-(syz+syy)), # West
     (sxx, 1-sxz), (0, 1-sxz), (0, 1-(syz+syy)), (sxx, 1-(syz+syy)) # East
     ]
+    uv_extent = (uv[11], uv[4])
     for i, v in enumerate(verts):
           verts[i] = v[0] * x, v[1] * y, v[2] * z
     for i,c in enumerate(uv):
@@ -111,6 +118,8 @@ class UsdRigWrite:
     texcoords = UsdGeom.PrimvarsAPI(cube).CreatePrimvar(
       "st", Sdf.ValueTypeNames.TexCoord2fArray, UsdGeom.Tokens.varying)
     texcoords.Set(uv)
+    attr = cube.CreateAttribute('userProperties:uvBB:mesh', Sdf.ValueTypeNames.Float2)
+    attr.Set(uv_extent)
     return xform
   
   def create_skeleton(self, joints, rest, bind, name="Skel", path=""):
