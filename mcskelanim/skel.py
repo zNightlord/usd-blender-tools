@@ -1,7 +1,10 @@
 import requests
+from typing import List
 
 from pxr import Usd, UsdGeom, UsdSkel
 from pxr import Sdf, Gf
+
+from .. import usd_util
 
 class BedrockJSON:
   
@@ -164,9 +167,6 @@ def from_json(self):
         cube = self.create_cube(geo_stage, name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path='/World')
         bind_skeleton(skel, mesh, indices=[ib] * 8)
   
-  
-  pprint(topo)
-  print(falttenedStage)
     # print(dir(cube), ", dir(xform))
     # stage.Save()
     return xform
