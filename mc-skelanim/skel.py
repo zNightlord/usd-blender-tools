@@ -139,21 +139,24 @@ def from_json(self):
   prev = None
   for c in bones:
     parent = c.get("parent")
+    pivot = c.get("pivot", (0,0,0))
     if prev == None:
       prev = c['name']
       prev_topo[prev] = prev
+      bind.append(pivot)
     elif parent:
-  
+      bind.append(bones[parent]["pivot"] - pivot)
       prev = c['name']
       parent_topo = prev_topo.get(parent)
       t = f"{parent_topo}/{prev}"
       prev_topo[prev] = t #f"{parent_topo}/{prev}"
       prev = t
     topo.append(prev)
+    rest.append(pivot)
  
   
   
-  skel = create_skeleton(geo_stage, topo, rest, bind, name="skel", path="/World")
+  skel = self.create_skeleton(geo_stage, topo, rest, bind, name="skel", path="/World")
   for ib,c in enumerate(bones):
     cubes = c.get('cubes', [])
     pivot = c.get('pivot', [0,0,0])
