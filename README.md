@@ -1,21 +1,23 @@
+# usd-blender-tools
+Blender with USD related tools, scripts.
 
-## USD Pointinstancer addon importer Minecraft world for Mineways
+Helpful resources:
 
-**The code is licensed in GPLv4**
+> A great help for writing USD python script with VSCode
+> [types-usd](https://pypi.org/project/types-usd)
+> 
+> [Vochsel USD github wiki](https://github.com/Vochsel/vochsel_wiki/blob/master/usd.md)
+> 
+> [Nvidia blogposts on the API](https://developer.nvidia.com/usd/tutorials)
+> 
+> **also mentioning Nvidia Omniverse channel**
+>
+> [Old Documentation tutorials?] (https://graphics.pixar.com/usd/release/tut_usd_tutorials.html)
+> 
+> [USD Documentation](https://openusd.org/release/api/index.html)
+> 
+> [USD Cookbook](https://github.com/ColinKennedy/USD-Cookbook)
+>
 
-### Mineways 
-
-https://github.com/erich666/Mineways
-
-In the meantime still need some tweaks
-
-#### **TODO** 
-
-Seperate USD function and Blender IO functions, UI
-
-
-#### **Useful references when making this**
-
- https://graphics.pixar.com/usd/release/tut_usd_tutorials.html
-
-https://developer.nvidia.com/usd/tutorials
+## Mineways PointInstancer
+A Blender addon implementation of reading, importing Mineways Minecraft map PointInstancer as points with Geometry Nodes modifier for instancing.
