@@ -96,10 +96,10 @@ class UsdRigWrite:
     uv = [
     (sxx+sxy, 1-syz), (sxx, 1-syz), (sxx, 1-(syz+syy)), (sxx+sxy, 1-(syz+syy)), # North
     (sxx2+sxy2, 1-syz), (sxx2+sxy, 1-syz), (sxx2+sxy, 1-(syz+syy)), (sxx2+sxy2, 1-(syz+syy)), # South
-    (sxx, 1-sxz), (sxx+sxy, 1-syz), (sxx+sxy, 1), (sxx, 1), # Top
+    (sxx, 1-syz), (sxx+sxy, 1-syz), (sxx+sxy, 1), (sxx, 1), # Top
     (sxx+sxy, 1), (sxx2+sxy, 1), (sxx2+sxy, 1-syz), (sxx+sxy, 1-syz), # Down
     (sxx2+sxy, 1-syz), (sxx+sxy, 1-syz), (sxx+sxy, 1-(syz+syy)), (sxx2+sxy, 1-(syz+syy)), # West
-    (sxx, 1-sxz), (0, 1-sxz), (0, 1-(syz+syy)), (sxx, 1-(syz+syy)) # East
+    (sxx, 1-syz), (0, 1-syz), (0, 1-(syz+syy)), (sxx, 1-(syz+syy)) # East
     ]
     uv_extent = (uv[11], uv[4])
     for i, v in enumerate(verts):
@@ -145,7 +145,7 @@ def bind_skeleton(self, mesh, indices = None, weights = None):
     weights = [1] * 8
   joint_weight.Set(weights)
   
-def from_json(self):
+def from_json(self, bones):
   stage = self.stage
   # Create Joint Topology, rest, bind Transforms
   rest = []
@@ -181,7 +181,7 @@ def from_json(self):
     else:
       for i,cu in enumerate(cubes):
         cube = self.create_cube(stage, name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path='/World')
-        bind_skeleton(skel, mesh, indices=[ib] * 8)
+        bind_skeleton(skel, cube.GetPrim().GetChildren()[0], indices=[ib] * 8)
   
     # print(dir(cube), ", dir(xform))
     # stage.Save()
