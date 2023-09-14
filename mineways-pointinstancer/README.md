@@ -1,21 +1,11 @@
 
-## USD Pointinstancer addon importer Minecraft world for Mineways
+## USD PointInstancer importer addon for Minecraft world from Mineways
+*(under GPLv4, Blender addon licensing)*
 
-**The code is licensed in GPLv4**
+Why need custom implementation?
+> Because Blender right now doesn't have it and it is nice to have a bit more of flexibility.
 
 ### Mineways 
 
 https://github.com/erich666/Mineways
 
-In the meantime still need some tweaks
-
-#### **TODO** 
-
-Seperate USD function and Blender IO functions, UI
-
-
-#### **Useful references when making this**
-
- https://graphics.pixar.com/usd/release/tut_usd_tutorials.html
-
-https://developer.nvidia.com/usd/tutorials
