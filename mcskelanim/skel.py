@@ -1,5 +1,5 @@
 import requests
-from typing import List
+from typing import List, Optional
 
 from pxr import Usd, UsdGeom, UsdSkel
 from pxr import Sdf, Gf
@@ -25,9 +25,9 @@ class BedrockJSON:
 class UsdRigWrite:
   pixel = 0.03125 # Geometry pixel per cm
   def __init__(self):
-    self.stage: Usd.Stage | None = None
-    self.skel: UsdSkel.Skeleton | None = None
-    self.cube_xforms = List[UsdGeom.Xform] | None = None
+    self.stage: Optional[Usd.Stage]= None
+    self.skel: Optional[UsdSkel.Skeleton] = None
+    self.cube_xforms: Optional[List[UsdGeom.Xform]] = None
   
   def create_stage(self, name, start=0, end=0) -> Usd.Stage:
     if not name.endswith('.usda'):
@@ -111,11 +111,12 @@ class UsdRigWrite:
     return xform
   
   def create_skeleton(self, joints, rest, bind, name="Skel", path=""):
-    skel = UsdSkel.Skeleton.Define(stage, f'{path}/{name}')
+    root = UsdSkel.Root.Deone(stage, f'{path}/RIG_{name}')
+    skel = UsdSkel.Skeleton.Define(stage, f'{path}/RIG_{name}/{name}')
     joints = skel.CreateJointsAttr(joints)
     skel.CreateRestTransformsAttr(rest)
     skel.CreateBindTransformsAttr(bind)
-    return skel
+    return skel, root
 
 def bind_skeleton(self, mesh, indices = None, weights = None):
   bind_ske = UsdSkel.BindingAPI.Apply(skel.GetPrim())
@@ -156,7 +157,7 @@ def from_json(self):
  
   
   
-  skel = self.create_skeleton(geo_stage, topo, rest, bind, name="skel", path="/World")
+  skel, root = self.create_skeleton(geo_stage, topo, rest, bind, name="skel", path="/World")
   for ib,c in enumerate(bones):
     cubes = c.get('cubes', [])
     pivot = c.get('pivot', [0,0,0])
