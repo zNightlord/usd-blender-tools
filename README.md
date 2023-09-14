@@ -11,6 +11,10 @@ Helpful resources:
 > [Nvidia blogposts on the API](https://developer.nvidia.com/usd/tutorials)
 > 
 > **also mentioning Nvidia Omniverse channel**
+>
+> [Old Documentation tutorials?] (https://graphics.pixar.com/usd/release/tut_usd_tutorials.html)
+> 
+> [USD Documentation](https://openusd.org/release/api/index.html)
 > 
 > [USD Cookbook](https://github.com/ColinKennedy/USD-Cookbook)
 >
