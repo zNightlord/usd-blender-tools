@@ -4,12 +4,9 @@ from pxr import Usd, UsdGeom, UsdSkel
 from pxr import Sdf, Gf
 
 class BedrockJSON:
-  base_path = "https://raw.githubusercontent.com/Mojang/bedrock-samples/preview/resource_pack/models/entity/armor_stand.geo.json"
   
-  def request_json(self, path = None):
-    if path == None:
-      path = self.base_path
-      
+  
+  def request_json(self, path):
     response = requests.get(path)
     
     # Check if the request was successful
