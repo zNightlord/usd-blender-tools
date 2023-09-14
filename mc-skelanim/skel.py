@@ -1,9 +1,9 @@
 import requests
 
 from pxr import Usd, UsdGeom, UsdSkel
-from pxr import Sdf
+from pxr import Sdf, Gf
 
-class BedrockJSON
+class BedrockJSON:
   base_path = "https://raw.githubusercontent.com/Mojang/bedrock-samples/preview/resource_pack/models/entity/armor_stand.geo.json"
   
   def request_json(self, path = None):
@@ -110,12 +110,12 @@ class UsdRigWrite:
     texcoords.Set(uv)
     return xform
   
-def create_skeleton(self, joints, rest, bind, name="Skel", path=""):
-  skel = UsdSkel.Skeleton.Define(stage, f'{path}/{name}')
-  joints = skel.CreateJointsAttr(joints)
-  skel.CreateRestTransformsAttr(rest)
-  skel.CreateBindTransformsAttr(bind)
-  return skel
+  def create_skeleton(self, joints, rest, bind, name="Skel", path=""):
+    skel = UsdSkel.Skeleton.Define(stage, f'{path}/{name}')
+    joints = skel.CreateJointsAttr(joints)
+    skel.CreateRestTransformsAttr(rest)
+    skel.CreateBindTransformsAttr(bind)
+    return skel
 
 def bind_skeleton(self, mesh, indices = None, weights = None):
   bind_ske = UsdSkel.BindingAPI.Apply(skel.GetPrim())
@@ -167,7 +167,7 @@ def from_json(self):
         cube = self.create_cube(geo_stage, name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path='/World')
         bind_skeleton(skel, mesh, indices=[ib] * 8)
   
-  falttenedStage = geo_stage.Flatten().ExportToString()
+  
   pprint(topo)
   print(falttenedStage)
     # print(dir(cube), ", dir(xform))
