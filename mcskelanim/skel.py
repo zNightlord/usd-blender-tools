@@ -32,14 +32,15 @@ class UsdRigWrite:
   def create_stage(self, name, start=0, end=0) -> Usd.Stage:
     if not name.endswith('.usda'):
       name += ".usda"
-    self.stage = Usd.Stage.CreateNew(name)
+    stage = Usd.Stage.CreateNew(name)
     stage.SetMetadata('comment', "Minecraft rig stage usda generation by Trung Phạm")
-    xform = UsdGeom.Xform.Define(geo_stage, "/World")
+    xform = UsdGeom.Xform.Define(stage, "/World")
     stage.SetDefaultPrim(xform.GetPrim())
     if start:
-      self.stage.SetStartTimecode(start)
+      stage.SetStartTimecode(start)
     if end:
-      self.stage.SetEndTimecode(end)
+      stage.SetEndTimecode(end)
+    self.stage = stage
   
   def create_cube(
     self, name: str, path: Sdf.Path | str="", 
@@ -53,6 +54,8 @@ class UsdRigWrite:
     ox, oy = 0,0
     px,py, pz = pivot
     orx, ory, orz = origin
+    
+    stage = self.stage
     
     xform = UsdGeom.Xform.Define(stage, f'{path}/{name}')
     xform_prim = xform.GetPrim()
@@ -111,17 +114,19 @@ class UsdRigWrite:
     return xform
   
   def create_skeleton(self, joints, rest, bind, name="Skel", path=""):
+    stage = self.stage
     root = UsdSkel.Root.Deone(stage, f'{path}/RIG_{name}')
     skel = UsdSkel.Skeleton.Define(stage, f'{path}/RIG_{name}/{name}')
     joints = skel.CreateJointsAttr(joints)
     skel.CreateRestTransformsAttr(rest)
     skel.CreateBindTransformsAttr(bind)
+    self.skel = skel
     return skel, root
 
 def bind_skeleton(self, mesh, indices = None, weights = None):
-  bind_ske = UsdSkel.BindingAPI.Apply(skel.GetPrim())
+  bind_ske = UsdSkel.BindingAPI.Apply(self.skel.GetPrim())
   bind_geo = UsdSkel.BindingAPI.Apply(mesh.GetPrim())
-  bind_geo.CreateSkeletonRel().AddTarget(skel.GetPath())
+  bind_geo.CreateSkeletonRel().AddTarget(self.skel.GetPath())
   joint_indicies = bind_geo.CreateJointIndicesPrimvar(False,1)
   if not indices:
     indices = [0] * 8
@@ -132,6 +137,7 @@ def bind_skeleton(self, mesh, indices = None, weights = None):
   joint_weight.Set(weights)
   
 def from_json(self):
+  stage = self.stage
   # Create Joint Topology, rest, bind Transforms
   rest = []
   bind = []
@@ -157,15 +163,15 @@ def from_json(self):
  
   
   
-  skel, root = self.create_skeleton(geo_stage, topo, rest, bind, name="skel", path="/World")
+  skel, root = self.create_skeleton(stage, topo, rest, bind, name="skel", path="/World")
   for ib,c in enumerate(bones):
     cubes = c.get('cubes', [])
     pivot = c.get('pivot', [0,0,0])
     if cubes == []:
-      self.create_cube(geo_stage, name=c['name'], pivot=pivot, size=(0,0,0), path='/World')
+      self.create_cube(stage, name=c['name'], pivot=pivot, size=(0,0,0), path='/World')
     else:
       for i,cu in enumerate(cubes):
-        cube = self.create_cube(geo_stage, name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path='/World')
+        cube = self.create_cube(stage, name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path='/World')
         bind_skeleton(skel, mesh, indices=[ib] * 8)
   
     # print(dir(cube), ", dir(xform))
