@@ -121,7 +121,7 @@ class UsdRigWrite:
     texcoords = UsdGeom.PrimvarsAPI(cube).CreatePrimvar(
       "st", Sdf.ValueTypeNames.TexCoord2fArray, UsdGeom.Tokens.varying)
     texcoords.Set(uv)
-    attr = cube.CreateAttribute('userProperties:uvBB:mesh', Sdf.ValueTypeNames.Float2)
+    attr = cube_prim.CreateAttribute('userProperties:uvBB:mesh', Sdf.ValueTypeNames.Float2)
     attr.Set(uv_extent)
     return xform
   
