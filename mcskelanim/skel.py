@@ -185,4 +185,3 @@ def from_json(self, bones):
   
     # print(dir(cube), ", dir(xform))
     # stage.Save()
-    return xform
