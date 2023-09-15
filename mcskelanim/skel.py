@@ -188,3 +188,6 @@ def from_json(self, bones):
   
     # print(dir(cube), ", dir(xform))
     # stage.Save()
+    
+  def output(self):
+    print_stage(self.stage)
