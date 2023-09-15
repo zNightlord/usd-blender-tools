@@ -1,5 +1,3 @@
-import requests
-
 from mcskelanim import BedrockJSON
 
 import pytest
