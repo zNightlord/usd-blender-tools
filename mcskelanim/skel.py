@@ -2,7 +2,7 @@ import requests
 from typing import List, Optional
 
 from pxr import Usd, UsdGeom, UsdSkel
-from pxr import Sdf, Gf
+from pxr import Sdf, Gf, Vt
 
 def print_stage(stage, flatten=True):
   if flatten:
@@ -177,12 +177,12 @@ class UsdRigWrite:
         prev_pivot[prev] = lpivot
         prev_topo[prev] = t #f"{parent_topo}/{prev}"
         prev = t
-      topo.append(Gf.Matrix4d(Gf.Rotation().SetIdentity(), Gf.Vec3d(prev[0], prev[1], prev[2]))
+      topo.append(Gf.Matrix4d(Gf.Rotation().SetIdentity(), Gf.Vec3d(prev[0], prev[1], prev[2])))
       rest.append(Gf.Rotation().SetIdentity(), Gf.Vec3d(pivot[0], pivot[1], pivot[2]))
    
     
     
-    skel, root = self.create_skeleton(topo, rest, bind, name="skel", path="/World")
+    skel, root = self.create_skeleton(topo, Vt.Matrix4dArray(rest), Vt.Matrix4dArray(bind), name="skel", path="/World")
     for ib,c in enumerate(bones):
       cubes = c.get('cubes', [])
       pivot = c.get('pivot', [0,0,0])
