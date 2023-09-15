@@ -127,7 +127,7 @@ class UsdRigWrite:
   
   def create_skeleton(self, joints, rest, bind, name="Skel", path="/World"):
     stage = self.stage
-    root = UsdSkel.Root.Define(stage, f'{path}/RIG{name}')
+    root = UsdSkel.Root.Define(stage, f'{path}/RIG_{name}')
     skel = UsdSkel.Skeleton.Define(stage, f'{path}/RIG_{name}/{name}')
     joints = skel.CreateJointsAttr(joints)
     skel.CreateRestTransformsAttr(rest)
@@ -187,10 +187,10 @@ class UsdRigWrite:
       cubes = c.get('cubes', [])
       pivot = c.get('pivot', [0,0,0])
       if cubes == []:
-        self.create_cube(name=c['name'], pivot=pivot, size=(0,0,0), path='/World')
+        self.create_cube(name=c['name'], pivot=pivot, size=(0,0,0), path=root.GetPath())
       else:
         for i,cu in enumerate(cubes):
-          cube = self.create_cube(name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path='/World')
+          cube = self.create_cube(name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path=root.GetPath())
           self.bind_skeleton(cube.GetPrim().GetChildren()[0], indices=[ib] * 8)
     
       # print(dir(cube), ", dir(xform))
