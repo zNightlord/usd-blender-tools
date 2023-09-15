@@ -169,10 +169,12 @@ class UsdRigWrite:
         prev_pivot[prev] = pivot
         bind.append(pivot)
       elif parent:
-        bind.append(prev_pivot[parent] - pivot)
+        lpivot = (prev_pivot[parent][0] - pivot[0], prev_pivot[parent][1] - pivot[1], prev_pivot[parent][2] - pivot[2])
+        bind.append(lpivot)
         prev = c['name']
         parent_topo = prev_topo.get(parent)
         t = f"{parent_topo}/{prev}"
+        prev_pivot[prev] = lpivot
         prev_topo[prev] = t #f"{parent_topo}/{prev}"
         prev = t
       topo.append(prev)
