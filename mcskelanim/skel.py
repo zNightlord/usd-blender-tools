@@ -125,10 +125,10 @@ class UsdRigWrite:
     attr.Set(uv_extent)
     return xform
   
-  def create_skeleton(self, joints, rest, bind, name="Skel", path=""):
+  def create_skeleton(self, joints, rest, bind, name="Skel", path="/World"):
     stage = self.stage
-    root = UsdSkel.Root.Define(stage, f'{path}/RIG_{name}')
-    skel = UsdSkel.Skeleton.Define(stage, f'{path}/RIG_{name}/{name}')
+    root = UsdSkel.Root.Define(stage, f'{path}/RIG{name}')
+    skel = UsdSkel.Skeleton.Define(stage, f'{path}/RIG{name}/{name}')
     joints = skel.CreateJointsAttr(joints)
     skel.CreateRestTransformsAttr(rest)
     skel.CreateBindTransformsAttr(bind)
