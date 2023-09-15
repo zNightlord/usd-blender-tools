@@ -4,11 +4,14 @@ from typing import List, Optional
 from pxr import Usd, UsdGeom, UsdSkel
 from pxr import Sdf, Gf
 
-from .. import usd_util
+def print_stage(stage, flatten=True):
+  if flatten:
+    stage.ExportToStrinf()
+  else:
+    stage = stage.Flatten().ExportToString()
+  print(stage)
 
 class BedrockJSON:
-  
-  
   def request_json(self, path):
     response = requests.get(path)
     
