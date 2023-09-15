@@ -135,59 +135,62 @@ class UsdRigWrite:
     self.skel = skel
     return skel, root
 
-def bind_skeleton(self, mesh, indices = None, weights = None):
-  bind_ske = UsdSkel.BindingAPI.Apply(self.skel.GetPrim())
-  bind_geo = UsdSkel.BindingAPI.Apply(mesh.GetPrim())
-  bind_geo.CreateSkeletonRel().AddTarget(self.skel.GetPath())
-  joint_indicies = bind_geo.CreateJointIndicesPrimvar(False,1)
-  if not indices:
-    indices = [0] * 8
-  joint_indicies.Set(indices)
-  joint_weight = bind_geo.CreateJointWeightsPrimvar(False, 1)
-  if not weights:
-    weights = [1] * 8
-  joint_weight.Set(weights)
-  
-def from_json(self, bones):
-  stage = self.stage
-  # Create Joint Topology, rest, bind Transforms
-  rest = []
-  bind = []
-  topo = []
-  prev_topo = {}
-  prev = None
-  for c in bones:
-    parent = c.get("parent")
-    pivot = c.get("pivot", (0,0,0))
-    if prev == None:
-      prev = c['name']
-      prev_topo[prev] = prev
-      bind.append(pivot)
-    elif parent:
-      bind.append(bones[parent]["pivot"] - pivot)
-      prev = c['name']
-      parent_topo = prev_topo.get(parent)
-      t = f"{parent_topo}/{prev}"
-      prev_topo[prev] = t #f"{parent_topo}/{prev}"
-      prev = t
-    topo.append(prev)
-    rest.append(pivot)
- 
-  
-  
-  skel, root = self.create_skeleton(stage, topo, rest, bind, name="skel", path="/World")
-  for ib,c in enumerate(bones):
-    cubes = c.get('cubes', [])
-    pivot = c.get('pivot', [0,0,0])
-    if cubes == []:
-      self.create_cube(stage, name=c['name'], pivot=pivot, size=(0,0,0), path='/World')
-    else:
-      for i,cu in enumerate(cubes):
-        cube = self.create_cube(stage, name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path='/World')
-        bind_skeleton(skel, cube.GetPrim().GetChildren()[0], indices=[ib] * 8)
-  
-    # print(dir(cube), ", dir(xform))
-    # stage.Save()
+  def bind_skeleton(
+    self, mesh, 
+    indices = None, weights = None
+  ):
+    bind_ske = UsdSkel.BindingAPI.Apply(self.skel.GetPrim())
+    bind_geo = UsdSkel.BindingAPI.Apply(mesh.GetPrim())
+    bind_geo.CreateSkeletonRel().AddTarget(self.skel.GetPath())
+    joint_indicies = bind_geo.CreateJointIndicesPrimvar(False,1)
+    if not indices:
+      indices = [0] * 8
+    joint_indicies.Set(indices)
+    joint_weight = bind_geo.CreateJointWeightsPrimvar(False, 1)
+    if not weights:
+      weights = [1] * 8
+    joint_weight.Set(weights)
     
+  def from_json(self, bones):
+    stage = self.stage
+    # Create Joint Topology, rest, bind Transforms
+    rest = []
+    bind = []
+    topo = []
+    prev_topo = {}
+    prev = None
+    for c in bones:
+      parent = c.get("parent")
+      pivot = c.get("pivot", (0,0,0))
+      if prev == None:
+        prev = c['name']
+        prev_topo[prev] = prev
+        bind.append(pivot)
+      elif parent:
+        bind.append(bones[parent]["pivot"] - pivot)
+        prev = c['name']
+        parent_topo = prev_topo.get(parent)
+        t = f"{parent_topo}/{prev}"
+        prev_topo[prev] = t #f"{parent_topo}/{prev}"
+        prev = t
+      topo.append(prev)
+      rest.append(pivot)
+   
+    
+    
+    skel, root = self.create_skeleton(stage, topo, rest, bind, name="skel", path="/World")
+    for ib,c in enumerate(bones):
+      cubes = c.get('cubes', [])
+      pivot = c.get('pivot', [0,0,0])
+      if cubes == []:
+        self.create_cube(stage, name=c['name'], pivot=pivot, size=(0,0,0), path='/World')
+      else:
+        for i,cu in enumerate(cubes):
+          cube = self.create_cube(stage, name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path='/World')
+          bind_skeleton(skel, cube.GetPrim().GetChildren()[0], indices=[ib] * 8)
+    
+      # print(dir(cube), ", dir(xform))
+      # stage.Save()
+      
   def output(self):
     print_stage(self.stage)
