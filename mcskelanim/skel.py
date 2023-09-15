@@ -182,7 +182,7 @@ class UsdRigWrite:
    
     
     
-    skel, root = self.create_skeleton(stage, topo, rest, bind, name="skel", path="/World")
+    skel, root = self.create_skeleton(topo, rest, bind, name="skel", path="/World")
     for ib,c in enumerate(bones):
       cubes = c.get('cubes', [])
       pivot = c.get('pivot', [0,0,0])
