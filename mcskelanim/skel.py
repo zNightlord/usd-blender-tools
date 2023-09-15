@@ -11,6 +11,12 @@ def print_stage(stage, flatten=True):
     text = stage.ExportToString()
   print(text)
 
+def loc_matrix(location = (0,0,0), rotation=None):
+  if rotation == None:
+    rotation = Gf.Rotation().SetIdentity()
+  location = Gf.Vec3d(location[0], location[1], location[2])
+  return Gf.Matrix4d(rotation, location)
+
 class BedrockJSON:
   def request_json(self, path):
     response = requests.get(path)
@@ -31,6 +37,8 @@ class UsdRigWrite:
     self.stage: Optional[Usd.Stage]= None
     self.skel: Optional[UsdSkel.Skeleton] = None
     self.cube_xforms: Optional[List[UsdGeom.Xform]] = None
+    
+    self.bind_skel: Optional[UsdSkel.BindingAPI] = None
   
   def create_stage(self, name, start=0, end=0) -> Usd.Stage:
     if not name.endswith('.usda'):
@@ -133,24 +141,36 @@ class UsdRigWrite:
     skel.CreateRestTransformsAttr(rest)
     skel.CreateBindTransformsAttr(bind)
     self.skel = skel
+    self.skel_root = root
     return skel, root
 
-  def bind_skeleton(
+  def bind_skelleton(
     self, mesh, 
     indices = None, weights = None
   ):
-    bind_ske = UsdSkel.BindingAPI.Apply(self.skel.GetPrim())
-    bind_geo = UsdSkel.BindingAPI.Apply(mesh.GetPrim())
-    bind_geo.CreateSkeletonRel().AddTarget(self.skel.GetPath())
-    joint_indicies = bind_geo.CreateJointIndicesPrimvar(False,1)
+    bind_root = UsdSkel.BindingAPI.Apply(self.skel_root.GetPrim())
+    self.bind_skel = UsdSkel.BindingAPI.Apply(self.skel.GetPrim())
+    bind_geom = UsdSkel.BindingAPI.Apply(mesh.GetPrim())
+    bind_geom.CreateSkeletonRel().AddTarget(self.skel.GetPath())
+    joint_indicies = bind_geom.CreateJointIndicesPrimvar(False,1)
     if not indices:
       indices = [0] * 8
     joint_indicies.Set(indices)
-    joint_weight = bind_geo.CreateJointWeightsPrimvar(False, 1)
+    joint_weight = bind_geom.CreateJointWeightsPrimvar(False, 1)
     if not weights:
       weights = [1] * 8
     joint_weight.Set(weights)
+    identity = Gf.Matrix4d.SetIdentity()
+    bind_geom.CreateGeomBindTransformAttr(identity)
+  
+  def create_animation(self, name):
+    anim = UsdSkel.Animation.Define(self.stage, self.skel.GetPath().AppendPath(name))
+    self.bind_skel.CreateAnimationSourceRel().AddTarget(anim.GetPath())
+    # anim.CreateJointsAttr().Set()
+    # anim.CreateTranslateAttr().Set()
+    # anim_rot = {}
     
+  
   def from_json(self, bones):
     stage = self.stage
     # Create Joint Topology, rest, bind Transforms
@@ -169,7 +189,12 @@ class UsdRigWrite:
         prev_pivot[prev] = pivot
         lpivot = pivot
       elif parent:
-        lpivot = (prev_pivot[parent][0] - pivot[0], prev_pivot[parent][1] - pivot[1], prev_pivot[parent][2] - pivot[2])
+        lpivot = (
+          pivot[0] - prev_pivot[parent][0], 
+          pivot[1] - prev_pivot[parent][1], 
+          pivot[2] - prev_pivot[parent][2]
+        )
+       
         prev = c['name']
         parent_topo = prev_topo.get(parent)
         t = f"{parent_topo}/{prev}"
@@ -177,11 +202,11 @@ class UsdRigWrite:
         prev_topo[prev] = t #f"{parent_topo}/{prev}"
         prev = t
       topo.append(prev)
-      bind.append(Gf.Matrix4d(Gf.Rotation().SetIdentity(), Gf.Vec3d(float(lpivot[0]), float(lpivot[1]), float(lpivot[2]))))
-      rest.append(Gf.Matrix4d(Gf.Rotation().SetIdentity(), Gf.Vec3d(float(pivot[0]), float(pivot[1]), float(pivot[2]))))
+      bind.append(loc_matrix(lpivot))
+      rest.append(loc_matrix(pivot))
    
-    
-    
+   self.topo = prev_topo
+   
     skel, root = self.create_skeleton(topo, Vt.Matrix4dArray(rest), Vt.Matrix4dArray(bind), name="skel", path="/World")
     for ib,c in enumerate(bones):
       cubes = c.get('cubes', [])
@@ -191,7 +216,7 @@ class UsdRigWrite:
       else:
         for i,cu in enumerate(cubes):
           cube = self.create_cube(name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path=root.GetPath())
-          self.bind_skeleton(cube.GetPrim().GetChildren()[0], indices=[ib] * 8)
+          self.bind_skelleton(cube.GetPrim().GetChildren()[0], indices=[ib] * 8)
     
       # print(dir(cube), ", dir(xform))
       # stage.Save()
