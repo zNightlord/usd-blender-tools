@@ -104,7 +104,7 @@ class UsdRigWrite:
     (sxx2+sxy, 1-syz), (sxx+sxy, 1-syz), (sxx+sxy, 1-(syz+syy)), (sxx2+sxy, 1-(syz+syy)), # West
     (sxx, 1-syz), (0, 1-syz), (0, 1-(syz+syy)), (sxx, 1-(syz+syy)) # East
     ]
-    uv_extent = (uv[11], uv[4])
+    uv_extent = Gf.Vec2f(uv[11], uv[4])
     for i, v in enumerate(verts):
           verts[i] = v[0] * x, v[1] * y, v[2] * z
     for i,c in enumerate(uv):
