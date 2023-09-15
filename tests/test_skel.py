@@ -1,6 +1,11 @@
+from pathlib import Path
 from mcskelanim import BedrockJSON, UsdRigWrite
 
 import pytest
+
+current = Path().cwd()
+folder = current / "rig_output"
+Path.mkdir(folder, exist_ok=True)
 
 @pytest.fixture
 def test_base_json() -> list:
@@ -13,6 +18,7 @@ def test_request(test_base_json: list):
 
 def test_result(test_base_json: list):
   rig = UsdRigWrite()
-  rig.create_stage("armor_stand.usda")
+  rig.create_stage("rig_output/armor_stand.usda")
   rig.from_json(test_base_json)
   rig.output()
+  rig.stage.Save()

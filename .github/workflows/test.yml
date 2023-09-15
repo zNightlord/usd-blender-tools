@@ -38,3 +38,8 @@ jobs:
     - name: Test with pytest
       run: |
         python -m pytest -s
+    
+    - uses: actions/upload-artifact@v3
+      with:
+        name: rig
+        path: test/rig_output/*
