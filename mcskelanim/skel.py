@@ -177,8 +177,8 @@ class UsdRigWrite:
         prev_topo[prev] = t #f"{parent_topo}/{prev}"
         prev = t
       topo.append(prev)
-      bind.append(Gf.Rotation().SetIdentity(), Gf.Vec3d(float(lpivot[0]), float(lpivot[1]), float(lpivot[2])))
-      rest.append(Gf.Rotation().SetIdentity(), Gf.Vec3d(float(pivot[0]), float(pivot[1]), float(pivot[2])))
+      bind.append(Gf.Matrix4d(Gf.Rotation().SetIdentity(), Gf.Vec3d(float(lpivot[0]), float(lpivot[1]), float(lpivot[2]))))
+      rest.append(Gf.Matrix4d(Gf.Rotation().SetIdentity(), Gf.Vec3d(float(pivot[0]), float(pivot[1]), float(pivot[2]))))
    
     
     
