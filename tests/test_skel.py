@@ -22,3 +22,4 @@ def test_result(test_base_json: list):
   rig.from_json(test_base_json)
   rig.output()
   rig.stage.Save()
+  print(folder.iterdir())
