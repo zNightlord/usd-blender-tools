@@ -187,7 +187,7 @@ class UsdRigWrite:
       else:
         for i,cu in enumerate(cubes):
           cube = self.create_cube(stage, name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path='/World')
-          bind_skeleton(skel, cube.GetPrim().GetChildren()[0], indices=[ib] * 8)
+          self.bind_skeleton(cube.GetPrim().GetChildren()[0], indices=[ib] * 8)
     
       # print(dir(cube), ", dir(xform))
       # stage.Save()
