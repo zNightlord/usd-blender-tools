@@ -127,7 +127,7 @@ class UsdRigWrite:
   
   def create_skeleton(self, joints, rest, bind, name="Skel", path=""):
     stage = self.stage
-    root = UsdSkel.Root.Deone(stage, f'{path}/RIG_{name}')
+    root = UsdSkel.Root.Define(stage, f'{path}/RIG_{name}')
     skel = UsdSkel.Skeleton.Define(stage, f'{path}/RIG_{name}/{name}')
     joints = skel.CreateJointsAttr(joints)
     skel.CreateRestTransformsAttr(rest)
