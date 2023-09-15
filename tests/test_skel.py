@@ -13,5 +13,6 @@ def test_request(test_base_json: list):
 
 def test_result(test_base_json: list):
   rig = UsdRigWrite()
+  rig.create_stage("armor_stand.usda")
   rig.from_json(test_base_json)
   rig.output()
