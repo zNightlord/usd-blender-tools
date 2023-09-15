@@ -6,7 +6,7 @@ from pxr import Sdf, Gf, Vt
 
 def print_stage(stage, flatten=True):
   if flatten:
-    stage.ExportToStrinf()
+    stage.ExportToString()
   else:
     stage = stage.Flatten().ExportToString()
   print(stage)
