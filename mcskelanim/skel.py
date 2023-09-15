@@ -6,10 +6,10 @@ from pxr import Sdf, Gf, Vt
 
 def print_stage(stage, flatten=True):
   if flatten:
-    stage.ExportToString()
+    text = stage.Flatten().ExportToString()
   else:
-    stage = stage.Flatten().ExportToString()
-  print(stage)
+    text = stage.ExportToString()
+  print(text)
 
 class BedrockJSON:
   def request_json(self, path):
