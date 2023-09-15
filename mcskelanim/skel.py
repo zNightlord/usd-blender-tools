@@ -187,10 +187,10 @@ class UsdRigWrite:
       cubes = c.get('cubes', [])
       pivot = c.get('pivot', [0,0,0])
       if cubes == []:
-        self.create_cube(stage, name=c['name'], pivot=pivot, size=(0,0,0), path='/World')
+        self.create_cube(name=c['name'], pivot=pivot, size=(0,0,0), path='/World')
       else:
         for i,cu in enumerate(cubes):
-          cube = self.create_cube(stage, name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path='/World')
+          cube = self.create_cube(name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path='/World')
           self.bind_skeleton(cube.GetPrim().GetChildren()[0], indices=[ib] * 8)
     
       # print(dir(cube), ", dir(xform))
