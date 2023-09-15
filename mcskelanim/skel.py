@@ -177,8 +177,8 @@ class UsdRigWrite:
         prev_pivot[prev] = lpivot
         prev_topo[prev] = t #f"{parent_topo}/{prev}"
         prev = t
-      topo.append(prev)
-      rest.append(pivot)
+      topo.append(Gf.Matrix4d(Gf.Rotation().SetIdentity(), Gf.Vec3d(prev[0], prev[1], prev[2]))
+      rest.append(Gf.Rotation().SetIdentity(), Gf.Vec3d(pivot[0], pivot[1], pivot[2]))
    
     
     
