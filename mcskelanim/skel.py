@@ -158,6 +158,7 @@ class UsdRigWrite:
     bind = []
     topo = []
     prev_topo = {}
+    prev_pivot = {}
     prev = None
     for c in bones:
       parent = c.get("parent")
@@ -165,9 +166,10 @@ class UsdRigWrite:
       if prev == None:
         prev = c['name']
         prev_topo[prev] = prev
+        prev_pivot[prev] = pivot
         bind.append(pivot)
       elif parent:
-        bind.append(bones[parent]["pivot"] - pivot)
+        bind.append(prev_pivot[parent] - pivot)
         prev = c['name']
         parent_topo = prev_topo.get(parent)
         t = f"{parent_topo}/{prev}"
