@@ -1,3 +1,4 @@
+import os
 import requests
 import numpy as np
 from typing import List, Optional
@@ -49,10 +50,10 @@ class UsdRigWrite:
   def create_stage(self, name, start=0, end=0) -> Usd.Stage:
     if not name.endswith('.usda'):
       name += ".usda"
-    try:
+    if os.path.exists(name):
+      stage = Usd.Stage.Open(name)
+    else:
       stage = Usd.Stage.CreateNew(name)
-    except:
-      stage = Usd.Stage.Load(name)
     stage.SetMetadata('comment', "Minecraft rig stage usda generation by Trung Phạm")
     stage.SetMetadata('documentation', 'Foo')
     xform = UsdGeom.Xform.Define(stage, "/World")
@@ -224,7 +225,7 @@ class UsdRigWrite:
    
     self.topo = prev_topo
    
-    skel, root = self.create_skeleton(topo, Vt.Matrix4dArray(rest), Vt.Matrix4dArray(bind), name="skel", path="/World")
+    skel = self.create_skeleton(topo, Vt.Matrix4dArray(rest), Vt.Matrix4dArray(bind), name="skel", path="/World")
     for ib,c in enumerate(bones):
       cubes = c.get('cubes', [])
       pivot = c.get('pivot', [0,0,0])
@@ -232,7 +233,7 @@ class UsdRigWrite:
         self.create_cube(name=c['name'], pivot=pivot, size=(0,0,0), path=root.GetPath())
       else:
         for i,cu in enumerate(cubes):
-          cube = self.create_cube(name=c['name']+f"_{i}", pivot=(0,0,0), origin=cu['origin'], size=cu['size'], path=root.GetPath())
+          cube = self.create_cube(name=c['name']+f"_{i}", pivot=(0,0,0), origin=cu['origin'], size=cu['size'], path=skel.GetPath())
           self.bind_skelleton(cube.GetPrim().GetChildren()[0], indices=[ib] * 8)
     
       # print(dir(cube), ", dir(xform))
