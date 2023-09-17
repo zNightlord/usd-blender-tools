@@ -49,7 +49,10 @@ class UsdRigWrite:
   def create_stage(self, name, start=0, end=0) -> Usd.Stage:
     if not name.endswith('.usda'):
       name += ".usda"
-    stage = Usd.Stage.CreateNew(name)
+    try:
+      stage = Usd.Stage.CreateNew(name)
+    except:
+      stage = Usd.Stage.Load(name)
     stage.SetMetadata('comment', "Minecraft rig stage usda generation by Trung Phạm")
     stage.SetMetadata('documentation', 'Foo')
     xform = UsdGeom.Xform.Define(stage, "/World")
