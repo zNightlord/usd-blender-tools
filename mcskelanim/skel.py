@@ -17,6 +17,10 @@ def loc_matrix(location = (0,0,0), rotation=None):
   location = Gf.Vec3d(location[0], location[1], location[2])
   return Gf.Matrix4d(rotation, location)
 
+def convert_np_to_vt(my_array: numpy.ndarray) -> Vt.Vec3fArray:
+    return Vt.Vec3fArray.FromNumpy(my_array)
+
+
 class BedrockJSON:
   def request_json(self, path):
     response = requests.get(path)
@@ -39,6 +43,7 @@ class UsdRigWrite:
     self.cube_xforms: Optional[List[UsdGeom.Xform]] = None
     
     self.bind_skel: Optional[UsdSkel.BindingAPI] = None
+    self.root Optional[UsdSkel.Root] = None
   
   def create_stage(self, name, start=0, end=0) -> Usd.Stage:
     if not name.endswith('.usda'):
@@ -47,6 +52,8 @@ class UsdRigWrite:
     stage.SetMetadata('comment', "Minecraft rig stage usda generation by Trung Phạm")
     xform = UsdGeom.Xform.Define(stage, "/World")
     stage.SetDefaultPrim(xform.GetPrim())
+    UsdGeom.SetStageMetersPerUnit(stage, 0.01)
+    UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.Z)
     if start:
       stage.SetStartTimecode(start)
     if end:
@@ -71,12 +78,12 @@ class UsdRigWrite:
     xform = UsdGeom.Xform.Define(stage, f'{path}/{name}')
     xform_prim = xform.GetPrim()
   
-    attr = xform_prim.CreateAttribute('userProperties:blenderName:object', Sdf.ValueTypeNames.Token)
+    attr = xform_prim.CreateAttribute('userProperties:blenderName:object', Sdf.ValueTypeNames.String)
     attr.Set(name)
     if size == (0,0,0):
       return xform, None
   
-    cube = UsdGeom.Mesh.Define(stage, f'{path}/{name}/{name}')
+    cube = UsdGeom.Mesh.Define(stage, f'{path}/{name}/mesh_{name}')
     cube_prim = cube.GetPrim()
   
     verts = [
@@ -114,12 +121,13 @@ class UsdRigWrite:
     ]
     uv_extent = [uv[11], uv[4]]
     for i, v in enumerate(verts):
-          verts[i] = v[0] * x, v[1] * y, v[2] * z
+          verts[i] = v[0] * x + orx*p, v[1] * y + ory*p, v[2] * z + orz*p
+          
     for i,c in enumerate(uv):
       u,v = uv[i]
       uv[i] = (u+ox, v+oy)
     attr1 = cube_prim.CreateAttribute('userProperties:blenderName:mesh', Sdf.ValueTypeNames.String)
-    attr1.Set("H")# * len(verts))
+    attr1.Set(f"mesh_{name}")# * len(verts))
     cube.CreatePointsAttr(verts)
     cube.CreateFaceVertexIndicesAttr(faces)
     cube.CreateFaceVertexCountsAttr(count)
@@ -135,20 +143,22 @@ class UsdRigWrite:
   
   def create_skeleton(self, joints, rest, bind, name="Skel", path="/World"):
     stage = self.stage
-    root = UsdSkel.Root.Define(stage, f'{path}/RIG_{name}')
-    skel = UsdSkel.Skeleton.Define(stage, f'{path}/RIG_{name}/{name}')
+    # root = UsdSkel.Root.Define(stage, f'{path}/RIG_{name}')
+    skel_path = f'{path}/RIG_{name}/{name}' if root else f'{path}/{name}'
+    skel = UsdSkel.Skeleton.Define(stage, skel_path)
     joints = skel.CreateJointsAttr(joints)
     skel.CreateRestTransformsAttr(rest)
     skel.CreateBindTransformsAttr(bind)
     self.skel = skel
-    self.skel_root = root
+    # self.root = root
     return skel, root
 
   def bind_skelleton(
     self, mesh, 
     indices = None, weights = None
   ):
-    bind_root = UsdSkel.BindingAPI.Apply(self.skel_root.GetPrim())
+    if self.root:
+      bind_root = UsdSkel.BindingAPI.Apply(self.skel_root.GetPrim())
     self.bind_skel = UsdSkel.BindingAPI.Apply(self.skel.GetPrim())
     bind_geom = UsdSkel.BindingAPI.Apply(mesh.GetPrim())
     bind_geom.CreateSkeletonRel().AddTarget(self.skel.GetPath())
@@ -194,7 +204,6 @@ class UsdRigWrite:
           pivot[1] - prev_pivot[parent][1], 
           pivot[2] - prev_pivot[parent][2]
         )
-       
         prev = c['name']
         parent_topo = prev_topo.get(parent)
         t = f"{parent_topo}/{prev}"
@@ -205,7 +214,7 @@ class UsdRigWrite:
       bind.append(loc_matrix(lpivot))
       rest.append(loc_matrix(pivot))
    
-   self.topo = prev_topo
+    self.topo = prev_topo
    
     skel, root = self.create_skeleton(topo, Vt.Matrix4dArray(rest), Vt.Matrix4dArray(bind), name="skel", path="/World")
     for ib,c in enumerate(bones):
