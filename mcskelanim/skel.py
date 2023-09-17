@@ -51,6 +51,7 @@ class UsdRigWrite:
       name += ".usda"
     stage = Usd.Stage.CreateNew(name)
     stage.SetMetadata('comment', "Minecraft rig stage usda generation by Trung Phạm")
+    stage.SetMetadata('documentation', 'Foo')
     xform = UsdGeom.Xform.Define(stage, "/World")
     stage.SetDefaultPrim(xform.GetPrim())
     UsdGeom.SetStageMetersPerUnit(stage, 0.01)
@@ -78,7 +79,7 @@ class UsdRigWrite:
     xform = UsdGeom.Xform.Define(stage, f'{path}/{name}')
     xform_prim = xform.GetPrim()
     if pivot != (0,0,0):
-      xform_prim.AddXformOp(UsdGeom.XformOp.TypeTranslate).Set(Gf.Vec3d([px,py,pz])
+      xform_prim.AddXformOp(UsdGeom.XformOp.TypeTranslate).Set(Gf.Vec3d([px,py,pz]))
            
   
     attr = xform_prim.CreateAttribute('userProperties:blenderName:object', Sdf.ValueTypeNames.String)
