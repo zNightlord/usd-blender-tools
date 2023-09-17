@@ -179,7 +179,7 @@ class UsdRigWrite:
     if not weights:
       weights = [1] * 8
     joint_weight.Set(weights)
-    identity = Gf.Matrix4d.SetIdentity()
+    identity = Gf.Matrix4d().SetIdentity()
     bind_geom.CreateGeomBindTransformAttr(identity)
   
   def create_animation(self, name):
