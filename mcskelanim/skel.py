@@ -145,12 +145,11 @@ class UsdRigWrite:
   def create_skeleton(self, joints, rest, bind, name="Skel", path="/World"):
     stage = self.stage
     # root = UsdSkel.Root.Define(stage, f'{path}/RIG_{name}')
-    skel_path = f'{path}/RIG_{name}/{name}' if root else f'{path}/{name}'
-    skel = UsdSkel.Skeleton.Define(stage, skel_path)
+    skel_path = f'{path}/RIG_{name}/{name}' if self.root else f'{path}/{name}'
+    self.skel = skel = UsdSkel.Skeleton.Define(stage, skel_path)
     joints = skel.CreateJointsAttr(joints)
     skel.CreateRestTransformsAttr(rest)
     skel.CreateBindTransformsAttr(bind)
-    self.skel = skel
     # self.root = root
     return skel
 
