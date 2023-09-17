@@ -54,7 +54,7 @@ class UsdRigWrite:
     xform = UsdGeom.Xform.Define(stage, "/World")
     stage.SetDefaultPrim(xform.GetPrim())
     UsdGeom.SetStageMetersPerUnit(stage, 0.01)
-    UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.Z)
+    UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.z)
     if start:
       stage.SetStartTimecode(start)
     if end:
@@ -62,8 +62,7 @@ class UsdRigWrite:
     self.stage = stage
   
   def create_cube(
-    self, name: str, path: Sdf.Path | str="", 
-    pivot: tuple =(0,0,0), origin: tuple=(0,0,0), 
+    self, name: str, path: Sdf.Path | str="", origin: tuple=(0,0,0), 
     size: tuple =(1,2,5), uv: tuple=(0,0), tex_res:tuple=(64,64)
   ):
     p = self.pixel
@@ -71,13 +70,16 @@ class UsdRigWrite:
     sx = 1/tex_res[0]
     sy = 1/tex_res[1]
     ox, oy = 0,0
-    px,py, pz = pivot
+    px, py, pz = pivot
     orx, ory, orz = origin
     
     stage = self.stage
     
     xform = UsdGeom.Xform.Define(stage, f'{path}/{name}')
     xform_prim = xform.GetPrim()
+    if pivot != (0,0,0):
+      xform_prim.AddXformOp(UsdGeom.XformOp.TypeTranslate).Set(Gf.Vec3d([px,py,pz])
+           
   
     attr = xform_prim.CreateAttribute('userProperties:blenderName:object', Sdf.ValueTypeNames.String)
     attr.Set(name)
@@ -224,7 +226,7 @@ class UsdRigWrite:
         self.create_cube(name=c['name'], pivot=pivot, size=(0,0,0), path=root.GetPath())
       else:
         for i,cu in enumerate(cubes):
-          cube = self.create_cube(name=c['name']+f"_{i}",pivot=pivot, origin=cu['origin'], size=cu['size'], path=root.GetPath())
+          cube = self.create_cube(name=c['name']+f"_{i}", pivot=(0,0,0), origin=cu['origin'], size=cu['size'], path=root.GetPath())
           self.bind_skelleton(cube.GetPrim().GetChildren()[0], indices=[ib] * 8)
     
       # print(dir(cube), ", dir(xform))
