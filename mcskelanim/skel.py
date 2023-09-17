@@ -63,8 +63,10 @@ class UsdRigWrite:
     self.stage = stage
   
   def create_cube(
-    self, name: str, path: Sdf.Path | str="", origin: tuple=(0,0,0), 
-    size: tuple =(1,2,5), uv: tuple=(0,0), tex_res:tuple=(64,64)
+    self, name: str, path: Sdf.Path | str="", 
+    pivot: tuple=(0,0,0), 
+    origin: tuple=(0,0,0), size: tuple =(1,2,5), 
+    uv: tuple=(0,0), tex_res:tuple=(64,64)
   ):
     p = self.pixel
     x,y,z = size
