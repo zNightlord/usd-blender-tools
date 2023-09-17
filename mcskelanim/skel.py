@@ -1,4 +1,5 @@
 import requests
+import numpy as np
 from typing import List, Optional
 
 from pxr import Usd, UsdGeom, UsdSkel
@@ -17,7 +18,7 @@ def loc_matrix(location = (0,0,0), rotation=None):
   location = Gf.Vec3d(location[0], location[1], location[2])
   return Gf.Matrix4d(rotation, location)
 
-def convert_np_to_vt(my_array: numpy.ndarray) -> Vt.Vec3fArray:
+def convert_np_to_vt(my_array: np.ndarray) -> Vt.Vec3fArray:
     return Vt.Vec3fArray.FromNumpy(my_array)
 
 
@@ -151,7 +152,7 @@ class UsdRigWrite:
     skel.CreateBindTransformsAttr(bind)
     self.skel = skel
     # self.root = root
-    return skel, root
+    return skel
 
   def bind_skelleton(
     self, mesh, 
