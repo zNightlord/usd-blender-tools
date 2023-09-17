@@ -230,7 +230,7 @@ class UsdRigWrite:
       cubes = c.get('cubes', [])
       pivot = c.get('pivot', [0,0,0])
       if cubes == []:
-        self.create_cube(name=c['name'], pivot=pivot, size=(0,0,0), path=root.GetPath())
+        self.create_cube(name=c['name'], pivot=pivot, size=(0,0,0), path=skel.GetPath())
       else:
         for i,cu in enumerate(cubes):
           cube = self.create_cube(name=c['name']+f"_{i}", pivot=(0,0,0), origin=cu['origin'], size=cu['size'], path=skel.GetPath())
