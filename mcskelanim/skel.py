@@ -44,7 +44,7 @@ class UsdRigWrite:
     self.cube_xforms: Optional[List[UsdGeom.Xform]] = None
     
     self.bind_skel: Optional[UsdSkel.BindingAPI] = None
-    self.roo: Optional[UsdSkel.Root] = None
+    self.root: Optional[UsdSkel.Root] = None
   
   def create_stage(self, name, start=0, end=0) -> Usd.Stage:
     if not name.endswith('.usda'):
