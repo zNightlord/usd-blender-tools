@@ -85,8 +85,7 @@ class UsdRigWrite:
     xform = UsdGeom.Xform.Define(stage, f'{path}/{name}')
     xform_prim = xform.GetPrim()
     if pivot != (0,0,0):
-      ops = xform.Get()
-      print(ops)
+      ops = xform.GetOrderedXformOps()[0]
       if ops:
         ops.Set(Gf.Vec3d([px,py,pz]))
       else:
