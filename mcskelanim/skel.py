@@ -85,7 +85,7 @@ class UsdRigWrite:
     xform = UsdGeom.Xform.Define(stage, f'{path}/{name}')
     xform_prim = xform.GetPrim()
     if pivot != (0,0,0):
-      xform_prim.AddXformOp(UsdGeom.XformOp.TypeTranslate).Set(Gf.Vec3d([px,py,pz]))
+      xform.AddXformOp(UsdGeom.XformOp.TypeTranslate).Set(Gf.Vec3d([px,py,pz]))
            
   
     attr = xform_prim.CreateAttribute('userProperties:blenderName:object', Sdf.ValueTypeNames.String)
