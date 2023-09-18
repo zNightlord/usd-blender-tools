@@ -303,9 +303,9 @@ class UsdRigWrite:
       # stage.Save()
   
   def anim_from_json(self, anims: dict):
-    for k,v in anims.items():
+    for i,(k,v) in enumerate(anims.items()):
       l = v.get("animation_length")
-      self.create_animation(k, l if l else 0, v.get("bones"))
+      self.create_animation(i, l if l else 0, v.get("bones"))
   
   def output(self):
     print_stage(self.stage)
