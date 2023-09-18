@@ -47,9 +47,11 @@ def test_anim_anim():
   path_geo = geom_url+"phantom.geo.json"
   path_anim = anim_url+"phantom.animation.json"
   json = BedrockJSON()
-  bones = json.request_json(path)
+  bones = json.request_json(path_geo)
+  anims = json.request_json(path_anim)
   rig = UsdRigWrite()
   rig.create_stage("rig_output/phantom.usda")
   rig.from_json(bones)
+  rig.anim_from_json(anims)
   print("Hard part.")
   

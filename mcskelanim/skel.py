@@ -290,7 +290,7 @@ class UsdRigWrite:
   
   def anim_from_json(self, anims: dict):
     for k,v in anims.items():
-     l = v.get("animation_length")
+      l = v.get("animation_length")
       self.create_animation(k, l if l else 0, v.get("bones"))
   
   def output(self):
