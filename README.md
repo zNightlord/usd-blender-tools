@@ -21,3 +21,9 @@ Helpful resources:
 
 ## Mineways PointInstancer
 A Blender addon implementation of reading, importing Mineways Minecraft map PointInstancer as points with Geometry Nodes modifier for instancing.
+
+## Convert Minecraft entites entites to USD
+
+Convert Minecraft mobs, entites into USD geom, skel
+
+[Minecraft repo](https://github.com/Mojang/bedrock-samples/preview/)
