@@ -37,9 +37,18 @@ class BedrockJSON:
     # with open('t.json', "w") as file:
     #   file.write(str(content))
     if "model" in path:
-      data = content.get("minecraft:geometry")[0].get("bones")
+      d = content.get("minecraft:geometry")
+      if d:
+        d = data[0]
+      else:
+        for i in content:
+          c = content[i].get("bones")
+          if c:
+            d = c
+            break
+      data = d.get("bones")
     elif "animation" in path:
-      data = content.get("animations")
+      data = d.get("animations")
     return data
 
 class UsdRigWrite:
