@@ -20,7 +20,10 @@ Helpful resources:
 >
 
 ## Mineways PointInstancer
-A Blender addon implementation of reading, importing Mineways Minecraft map PointInstancer as points with Geometry Nodes modifier for instancing.
+A Blender addon *(yet)* implementation of reading, importing Mineways Minecraft map PointInstancer as points with Geometry Nodes modifier for instancing.
+
+Mostly reason for this is Blender haven't support PointInstancer Import *yet*
+See [USD PointInstancer Support](https://projects.blender.org/blender/blender/issues/96747#issuecomment-1023039)
 
 ## Convert Minecraft entites entites to USD
 
