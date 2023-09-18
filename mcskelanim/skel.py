@@ -76,9 +76,9 @@ class UsdRigWrite:
     UsdGeom.SetStageMetersPerUnit(stage, 0.01)
     UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.z)
     if start:
-      stage.SetStartTimecode(start)
+      stage.SetStartTimeCode(start)
     if end:
-      stage.SetEndTimecode(end)
+      stage.SetEndTimeCode(end)
     self.stage = stage
   
   def create_cube(
@@ -205,8 +205,8 @@ class UsdRigWrite:
     # Convert length to integer frame, set
     if isinstance(length, float) and length != 0:
       frame = int(round(length*FPS))
-    if self.stage.GetEndTimecode() < length and extend_stage_end:
-      self.stage.SetEndTimecode(frame)
+    if self.stage.GetEndTimeCode() < length and extend_stage_end:
+      self.stage.SetEndTimeCode(frame)
       
     anim = UsdSkel.Animation.Define(self.stage, self.skel.GetPath().Append(name))
     
