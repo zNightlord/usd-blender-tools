@@ -207,8 +207,8 @@ class UsdRigWrite:
       frame = int(round(length*FPS))
     if self.stage.GetEndTimeCode() < length and extend_stage_end:
       self.stage.SetEndTimeCode(frame)
-      
-    anim = UsdSkel.Animation.Define(self.stage, f"{self.skel.GetPath()}/{name}")
+    print(self.skel.GetPath())
+    anim = UsdSkel.Animation.Define(self.stage, self.skel.GetPath().AppendPath(name))
     
     translate = {}
     rotate = {}
