@@ -6,6 +6,8 @@ from typing import List, Optional
 from pxr import Usd, UsdGeom, UsdSkel
 from pxr import Sdf, Gf, Vt
 
+FPS = 24
+
 def print_stage(stage, flatten=True):
   if flatten:
     text = stage.Flatten().ExportToString()
@@ -24,7 +26,7 @@ def convert_np_to_vt(my_array: np.ndarray) -> Vt.Vec3fArray:
 
 
 class BedrockJSON:
-  def request_json(self, path):
+  def request_json(self, path) -> list | dict:
     response = requests.get(path)
     
     # Check if the request was successful
@@ -32,10 +34,13 @@ class BedrockJSON:
       return None
     content = response.json()
       
-    with open('t.json', "w") as file:
-      file.write(str(content))
-    bones = content.get("minecraft:geometry")[0].get("bones")
-    return bones
+    # with open('t.json', "w") as file:
+    #   file.write(str(content))
+    if "model" in path:
+      data = content.get("minecraft:geometry")[0].get("bones")
+    elif "animation" in path:
+      data = content.get("animations")
+    return data
 
 class UsdRigWrite:
   pixel = 0.03125 # Geometry pixel per cm
@@ -58,6 +63,7 @@ class UsdRigWrite:
     stage.SetMetadata('documentation', 'Foo')
     xform = UsdGeom.Xform.Define(stage, "/World")
     stage.SetDefaultPrim(xform.GetPrim())
+    stage.SetFramesPerSecond(FPS)
     UsdGeom.SetStageMetersPerUnit(stage, 0.01)
     UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.z)
     if start:
@@ -186,12 +192,51 @@ class UsdRigWrite:
     identity = Gf.Matrix4d().SetIdentity()
     bind_geom.CreateGeomBindTransformAttr(identity)
   
-  def create_animation(self, name):
-    anim = UsdSkel.Animation.Define(self.stage, self.skel.GetPath().AppendPath(name))
-    self.bind_skel.CreateAnimationSourceRel().AddTarget(anim.GetPath())
-    # anim.CreateJointsAttr().Set()
-    # anim.CreateTranslateAttr().Set()
-    # anim_rot = {}
+  def create_animation(self, name: str, length:float, bones:dict, extend_stage_end: bool=True):
+    # Convert length to integer frame, set
+    if isinstance(length, float) and length != 0:
+      frame = int(round(length*FPS))
+    if self.stage.GetEndTimecode() < length and extend_stage_end:
+      self.stage.SetEndTimecode(frame)
+      
+    
+    translate = {}
+    rotate = {}
+    scale = {}
+    bone_list = []
+    _bone_list = []
+
+    
+    for f in range(frame):
+      _t = []
+      _r = []
+      _s = []
+      for k,v in bones.items():
+        # First loop read through the bone
+        # Second loop add it in
+        if f == 0:
+          _bone_list.append(k)
+          bone_list.append(self.topo[k])
+        if f == 1:
+          anim.CreateJointsAttr().Set(bone_list)
+        # Get the keyframes infomation
+        for k in ["location", "rotation", "scale"]:
+          key = v.get(k)
+          if key:
+            for fk, fv  in key.items():
+              if round(float(fk)*FPS) == f:
+                if k == "location":
+                  _t.append(fv)
+                elif k == "rotation":
+                  _r.append(fv)
+          else:
+            if k == "location":
+              _t.append([0,0,0])
+            elif k == "rotation":
+              _r.append([0,0,0])
+          
+      anim.CreateTranslateAttr().Set(_t, f)
+      # anim_rot = {}
     
   
   def from_json(self, bones):
@@ -242,6 +287,11 @@ class UsdRigWrite:
     
       # print(dir(cube), ", dir(xform))
       # stage.Save()
-      
+  
+  def anim_from_json(self, anims: dict):
+    for k,v in anims.items():
+     l = v.get("animation_length")
+      self.create_animation(k, l if l else 0, v.get("bones"))
+  
   def output(self):
     print_stage(self.stage)
