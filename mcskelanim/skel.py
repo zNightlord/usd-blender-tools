@@ -257,9 +257,9 @@ class UsdRigWrite:
             elif k == "rotation":
               _r.append([0,0,0])
       if frame:
-        anim.CreateTranslateAttr().Set(_t, f)
+        anim.CreateTranslationsAttr().Set(_t, f)
       else:
-        anim.CreateTranslateAttr().Set(_t)
+        anim.CreateTranslationsAttr().Set(_t)
       # anim_rot = {}
     
   
