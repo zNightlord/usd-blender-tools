@@ -26,4 +26,4 @@ A Blender addon implementation of reading, importing Mineways Minecraft map Poin
 
 Convert Minecraft mobs, entites into USD geom, skel
 
-[Minecraft repo](https://github.com/Mojang/bedrock-samples/preview/)
+[Minecraft repo](https://github.com/Mojang/bedrock-samples)
