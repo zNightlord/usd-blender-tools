@@ -239,19 +239,27 @@ class UsdRigWrite:
         for k in ["location", "rotation", "scale"]:
           key = v.get(k)
           if key:
-            for fk, fv  in key.items():
-              if round(float(fk)*FPS) == f:
-                if k == "location":
-                  _t.append(fv)
-                elif k == "rotation":
-                  _r.append(fv)
+            if isinstance(key, dict):
+              for fk, fv  in key.items():
+                if round(float(fk)*FPS) == f:
+                  if k == "location":
+                    _t.append(fv)
+                  elif k == "rotation":
+                    _r.append(fv)
+            else:
+              if k == "location":
+                _t.append(key)
+              elif k == "rotation":
+                _r.append(key)
           else:
             if k == "location":
               _t.append([0,0,0])
             elif k == "rotation":
               _r.append([0,0,0])
-          
-      anim.CreateTranslateAttr().Set(_t, f)
+      if frame:
+        anim.CreateTranslateAttr().Set(_t, f)
+      else:
+        anim.CreateTranslateAttr().Set(_t)
       # anim_rot = {}
     
   
