@@ -45,7 +45,7 @@ class BedrockJSON:
           if isinstance(content[i], dict):
             c = content[i].get("bones")
             if c:
-              d = c
+              d = content[i]
               break
       data = d.get("bones")
     elif "animation" in path:
@@ -208,6 +208,7 @@ class UsdRigWrite:
     extend_stage_end: bool=True
   ):
     # Convert length to integer frame, set
+    frame = 0
     if isinstance(length, float) and length != 0:
       frame = int(round(length*FPS))
     if self.stage.GetEndTimeCode() < length and extend_stage_end:
