@@ -39,7 +39,7 @@ class BedrockJSON:
     if "model" in path:
       d = content.get("minecraft:geometry")
       if d:
-        d = data[0]
+        d = d[0]
       else:
         for i in content:
           c = content[i].get("bones")
