@@ -42,10 +42,11 @@ class BedrockJSON:
         d = d[0]
       else:
         for i in content:
-          c = content[i].get("bones")
-          if c:
-            d = c
-            break
+          if isinstance(content[i], dict):
+            c = content[i].get("bones")
+            if c:
+              d = c
+              break
       data = d.get("bones")
     elif "animation" in path:
       data = content.get("animations")
@@ -305,7 +306,7 @@ class UsdRigWrite:
   def anim_from_json(self, anims: dict):
     for i,(k,v) in enumerate(anims.items()):
       l = v.get("animation_length")
-      self.create_animation(i, l if l else 0, v.get("bones"))
+      self.create_animation(f"anim_{i}", l if l else 0, v.get("bones"))
   
   def output(self):
     print_stage(self.stage)
