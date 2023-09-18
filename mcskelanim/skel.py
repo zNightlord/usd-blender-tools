@@ -201,14 +201,18 @@ class UsdRigWrite:
     identity = Gf.Matrix4d().SetIdentity()
     bind_geom.CreateGeomBindTransformAttr(identity)
   
-  def create_animation(self, name: str, length:float, bones:dict, extend_stage_end: bool=True):
+  def create_animation(
+    self, 
+    name: str, length:float, bones:dict, 
+    extend_stage_end: bool=True
+  ):
     # Convert length to integer frame, set
     if isinstance(length, float) and length != 0:
       frame = int(round(length*FPS))
     if self.stage.GetEndTimeCode() < length and extend_stage_end:
       self.stage.SetEndTimeCode(frame)
-    print(self.skel.GetPath())
-    anim = UsdSkel.Animation.Define(self.stage, self.skel.GetPath().AppendPath(name))
+    
+    anim = UsdSkel.Animation.Define(self.stage, f"/World/skel/{name}")
     
     translate = {}
     rotate = {}
