@@ -48,7 +48,7 @@ class BedrockJSON:
             break
       data = d.get("bones")
     elif "animation" in path:
-      data = d.get("animations")
+      data = content.get("animations")
     return data
 
 class UsdRigWrite:
