@@ -61,6 +61,8 @@ class UsdRigWrite:
     
     self.bind_skel: Optional[UsdSkel.BindingAPI] = None
     self.root: Optional[UsdSkel.Root] = None
+    
+    self.use_matrixattr: bool = False
   
   def create_stage(self, name, start=0, end=0) -> Usd.Stage:
     if not name.endswith('.usda'):
@@ -200,7 +202,8 @@ class UsdRigWrite:
       weights = [1] * 8
     joint_weight.Set(weights)
     identity = Gf.Matrix4d().SetIdentity()
-    bind_geom.CreateGeomBindTransformAttr(identity)
+    if self.use_matrixattr:
+      bind_geom.CreateGeomBindTransformAttr(identity)
   
   def create_animation(
     self, 
