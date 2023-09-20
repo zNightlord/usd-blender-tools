@@ -1,7 +1,8 @@
 import os
 import requests
 import numpy as np
-from typing import List, Optional
+from typing import List, Optional, Union
+import math
 
 from pxr import Usd, UsdGeom, UsdSkel
 from pxr import Sdf, Gf, Vt
@@ -23,6 +24,52 @@ def loc_matrix(location = (0,0,0), rotation=None):
 
 def convert_np_to_vt(my_array: np.ndarray) -> Vt.Vec3fArray:
     return Vt.Vec3fArray.FromNumpy(my_array)
+
+def mat3_to_vec_roll(mat: Gf.Matrix3d):
+  if isinstance(mat, Gf.Matrix3d):
+    vec = mat.GetColumn(1)
+    vecmat = vec_roll_to_mat3(vec, 0)
+    vecmatinv = vecmat.GetInverse()
+    rollmat = vecmatinv * mat
+  else:
+    vec = mat.col[1]
+    vecmat = vec_roll_to_mat3(vec, 0)
+    vecmatinv = vecmat.inverted()
+    rollmat = vecmatinv @ mat
+  roll = math.atan2(rollmat[0][2], rollmat[2][2])
+  return vec, roll
+
+def vec_roll_to_mat3(vec: Union[Gf.Vec3,Vector], roll: float):
+    if isinstance(vec, Gf.Vec3):
+      target = Gf.Vec3((0, 0.1, 0))
+      nor = vec.GetNormalized()
+      axis = target.GetCross(nor)
+      if axis.GetDot(axis) > 0.0000000001:
+        axis.GetNormalized()
+        theta = target.GetAngle(nor)
+        bMatrix = Gf.Matrix4d().SetRotation(Gf.Rotation(theta, 3, axis))
+      else:
+        updown = 1 if target.dot(nor) > 0 else -1
+        bMatrix = Gf.Matrix4d().SetScale(Gf.Size3(updown, 3))
+        bMatrix[2][2] = 1.0
+      rMatrix = Gf.Matrix4d().SetRotation(Gf.Rotation(roll, 3, nor))
+      mat = rMatrix * bMatrix
+    else:
+      target = Vector((0, 0.1, 0))
+      nor = vec.normalized()
+      axis = target.cross(nor)
+      if axis.dot(axis) > 0.0000000001:
+        axis.normalize()
+        theta = target.angle(nor)
+        bMatrix = Matrix.Rotation(theta, 3, axis)
+      else:
+        updown = 1 if target.dot(nor) > 0 else -1
+        bMatrix = Matrix.Scale(updown, 3)               
+        bMatrix[2][2] = 1.0
+
+      rMatrix = Matrix.Rotation(roll, 3, nor)
+      mat = rMatrix @ bMatrix
+      return mat
 
 
 class BedrockJSON:
