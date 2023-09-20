@@ -52,6 +52,7 @@ def test_anim_anim():
   rig = UsdRigWrite()
   rig.create_stage("rig_output/phantom.usda")
   rig.from_json(bones)
+  rig.stage.Save()
   rig.anim_from_json(anims)
   print("Hard part.")
   
