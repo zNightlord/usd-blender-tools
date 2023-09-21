@@ -25,7 +25,7 @@ def stage_get_axis(stage):
 def has_prim_type(prim_type):
   has_type = False
   for x in stage.Traverse():
-    if x.IsA(prim_type) # UsdGeom.Mesh
+    if x.IsA(prim_type): # UsdGeom.Mesh
       has_type = True
       break
   return has_type
@@ -64,13 +64,16 @@ class USDPxr:
       pass
     return has_lib
 
-class USDMinewaysStage(USDPxr, USDMinewaysFile):
+class MWStage(USDPxr, USDMinewaysFile):
   
   def __init__(self, path:str) -> None:
     super().__init__(path)
     self.voxel_path =  f"/{str(self.world_name).replace(' ','_')}/VoxelMap"
     self.blocklib_path = f"{self.voxelmap}/BlockLib"
-  
+    
+    self.chunks: List[MWChunk] = []
+    self.chunk_filter: str = ""
+    
   def get_stage(self) -> None:
     self.stage = Usd.Stage.Open(self.path)
     self.blocklib = self.stage_ref.GetPrimAtPath(f"{self.blocklib_path()}/Blocks")
@@ -79,54 +82,38 @@ class USDMinewaysStage(USDPxr, USDMinewaysFile):
   
   def is_point_instance(self) -> bool:
     return self.blocklib_path is None
-
-class USDMinewaysChunk(USDMinewaysStage):
-  
-  def __init__(self, chunk_filter:str = "") -> None:
-    super().__init__()
-    self.chunk_filter:str = chunk_filter if chunk_filter else "Chunk"
     
-    self.positions:list = []
-    self.indicies:list = []
-    self.block_path:list = []
+  def set_chunk_filter(self, chunk_filter: str):
+    self.chunk_filter = chunk_filter
     
-    self.chunks()
-
-  def chunks(self) -> None:
-      for chunk in self.chunks:
-        chunk_name = self.base_chunk(chunk)
-        if self.chunk_filter in chunk_name:
-          chunk_ref = self.get_chunk(chunk_name)
-          self.positions.append( chunk_ref.GetAttribute('positions').Get())
-          self.indicies.append(chunk_ref.GetAttribute('protoIndices').Get())
-          self.block_path.append(chunk_ref.GetRelationship('prototypes').GetTargets())
-
-  @property
-  def chunks_list(self) -> list:
-    return [self.base_chunk(chunk) for chunk in self.chunks]
-
-  def base_chunk(self, chunk) -> str:
-    """
-      Get chunk base
-      TODO get base name without doing weird string, correct way
-    """
-    # Something stupid about this
-    return str(chunk).split(str(self.voxelmap))[1].split('>')[0]
-
-  def get_chunk(self, chunk_name:str) -> UsdPrim:
+  def get_chunk_prim(self, chunk_name:str) -> UsdPrim:
     return self.stage.GetPrimAtPath(f"{self.voxelmap}{chunk_name}")
-    
-  def __repr__(self):
-    return (
-      f"{self.stage_ref}"
-    )
-  
-  def __str__(self):
-    return (
-      f"{self.stage_ref}"
-    )
 
-class USDMinewaysBlock(USDMinewaysChunk):
+class MWChunk():
+  
+  def __init__(self, prim: UsdPrim) -> None:
+    self.chunk_prim = prim
+    self.name = prim.GetName()
+    self.positions: list = self.chunk_prim.GetAttribute('positions').Get()
+    self.indicies: list = self.chunk_prim.GetAttribute('protoIndices').Get()
+    self.block_path: list = self.chunk_prim.GetRelationship('prototypes').GetTargets()
+    
+    
+    self.blocks:  = []
+    
+    @property
+    def blocks(self) -> List[MWBlock]:
+      _blocks = []
+      for blocks in self.blocks_path:
+        for block in blocks:
+          _blocks.append(MWBlock(block))
+          
+      return _blocks
+        
+
+
+
+class MWBlock:
 
   def __init__(self):
     super().__init__()
@@ -192,7 +179,7 @@ class USDMinewaysBlock(USDMinewaysChunk):
       f"{self.stage_ref}"
     )
   
-class USDMinewaysMesh(USDMinewaysBlock):
+class MWMesh(USDMinewaysBlock):
   def __init__(self):
     self.mesh = []
     self.mesh_block = []
