@@ -9,36 +9,46 @@ try:
 except: 
   pass
 
-class USDMinewaysFile: 
+from pxr import UsdGeom
+
+def stage_set_axis(stage, axis):
+  if axis == 'Z':
+    axis = UsdGeom.Tokens.z
+  elif axis == 'Y':
+    axis == UsdGeom.Tokens.y
+  if isinstance(axis, UsdGeom.Tokens):
+    UsdGeom.UsdGeomSetStageUpAxis(stage, axis)
+
+def stage_get_axis(stage):
+  return 'Z' if UsdGeomGetStageUpAxis(stage) == UsdGeom.Tokens.z else 'Y'
+  
+def has_prim_type(prim_type):
+  has_type = False
+  for x in stage.Traverse():
+    if x.IsA(prim_type) # UsdGeom.Mesh
+      has_type = True
+      break
+  return has_type
+
+class USDMinewaysFile:
+  
   def __init__(self, path: Path | str) -> None:
     if isinstance(path, str):
       path = Path(path)
     self.path: Path = path 
+    
+    self.directory_path = self.path.parent
+    self.file_name = self.path.stem
+    path = self.directory_path / f"{self.file_name}_materials" / "BlockLibrary.usda"
+    self.blocklib_path = path if Path.exists(path) else None
+    self.world_name = self.directory_path.name
   
-  @property
-  def blocklib_path(self) -> str | None:
-    path = {self.directory_path} / f"{self.file_name}_materials" / "BlockLibrary.usda"
-    return path if os.path.exists(path) else None
-
-  @property
-  def file_name(self) -> str:
-    base = os.path.basename(file_path)
-    return os.path.splitext(base)[0]
-
-  @property
-  def directory_path(self) -> str:
-    return self.path.stem
-
-  @property
-  def world_name(self) -> str:
-    return os.path.basename(os.path.dirname(self.path))
-
   def __str__(self) -> str:
     return (
       f"{self.world_name}",
       f"{self.directory_path}"
     )
-    
+  
   def __repr__(self) -> str:
     return __str__(self)
 
@@ -55,37 +65,20 @@ class USDPxr:
     return has_lib
 
 class USDMinewaysStage(USDPxr, USDMinewaysFile):
+  
   def __init__(self, path:str) -> None:
     super().__init__(path)
-    if self.has_pxr:
-      self.stage()
+    self.voxel_path =  f"/{str(self.world_name).replace(' ','_')}/VoxelMap"
+    self.blocklib_path = f"{self.voxelmap}/BlockLib"
   
-  def stage(self) -> None:
-      self.stage = Usd.Stage.Open(self.path)
-      self.blocklib = self.stage_ref.GetPrimAtPath(f"{self.blocklib_path()}/Blocks")
-      self.voxelmap = self.stage_ref.GetPrimAtPath(self.voxel_path())
-      self.chunks = self.voxel_ref.GetChildren()
+  def get_stage(self) -> None:
+    self.stage = Usd.Stage.Open(self.path)
+    self.blocklib = self.stage_ref.GetPrimAtPath(f"{self.blocklib_path()}/Blocks")
+    self.voxelmap = self.stage_ref.GetPrimAtPath(self.voxel_path())
+    self.chunks = self.voxel_ref.GetChildren()
   
   def is_point_instance(self) -> bool:
     return self.blocklib_path is None
-  
-  @property
-  def voxel_path(self) -> str:
-    return f"/{str(self.world_name).replace(' ','_')}/VoxelMap"
-
-  @property
-  def blocklib_path(self) -> str:
-    return f"{self.voxelmap}/BlockLib"
-
-  def __repr__(self):
-    return (
-      f"{self.stage_ref}"
-    )
-  
-  def __str__(self):
-    return (
-      f"{self.stage_ref}"
-    )
 
 class USDMinewaysChunk(USDMinewaysStage):
   

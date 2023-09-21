@@ -3,7 +3,7 @@ from bl_ui.generic_ui_list import draw_ui_list
 
 from .io_usd_import import MCU_OT_ImportWorld
 
-class MCU_Instance_Block(bpy.types.PropertyGroup):
+class MUC_InstanceBlock(bpy.types.PropertyGroup):
   """ Block info"""
   def update(self, context):
     obj = context.obj
@@ -15,11 +15,24 @@ class MCU_Instance_Block(bpy.types.PropertyGroup):
   block_nbt_id: bpy.props.IntProperty(name = "Block NBT ID", default = 0)
   
   
-class MCU_Instance_Object(bpy.types.PropertyGroup):
+class MUC_InstanceObject(bpy.types.PropertyGroup):
   blocks: bpy.types.CollectionProperty(type=MCU_Instance_Block)
   block_index: bpy.props.IntProperty(name = "Block Index")
+  
+  def add_block(self, block:Object, index: int, sub_index: int):
+    item = self.blocks.add()
+    item.block = block
+    item.block_id = index
+    item.block_nbt_id = sub_index
+    return item
+  
+  def register(cls):
+    bpy.types.Object.muc = PointerProperty(type=cls)
+    
+  def unregister(cls):
+    del bpy.types.Object.muc
 
-class MCU_UL_OBJ(bpy.types.UIList):
+class MUC_UL_OBJ(bpy.types.UIList):
     bl_idname = "MCU_UL_OBJ"
     
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -30,7 +43,7 @@ class MCU_UL_OBJ(bpy.types.UIList):
             row.prop(obj, "name", text="")
             
 
-class MCU_PT_BASE_Panel(bpy.types.Panel):
+class MUC_PT_BASE_Panel(bpy.types.Panel):
     """Base scene panel"""
     bl_category = "MCUSD"
     bl_label = "MCUSD"
@@ -68,10 +81,8 @@ classes = (
 )
 
 def register():
-  bpy.types.Object.minecraft_usd = bpy.types.PointerProperty(
-    type=MCU_Instance_Object
-  )
+
   
 def unregister():
-  del bpy.types.Object.minecraft_usd
+  
   

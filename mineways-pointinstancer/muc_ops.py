@@ -45,7 +45,7 @@ class BlendHeleper:
           except:
               pass
             
-  def create_collection(name,parent = None):
+  def create_collection(name, parent = None):
       """ Use util  
       Create collection, if exist get it."""
       collection = D.collections.get(name)
@@ -65,7 +65,8 @@ class NodeUtilityMixin:
   
   def connect_sockets(self, input_socket, output_socket):
     if util.min_bv((3,6,0)):
-      print("TODO")
+      connect_sockets(input_socket, output_socket)
+    else:
     
     
   
