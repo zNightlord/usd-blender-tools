@@ -85,7 +85,15 @@ class MWStage(USDPxr, USDMinewaysFile):
     
   def set_chunk_filter(self, chunk_filter: str):
     self.chunk_filter = chunk_filter
+  
+  def get_chunks(self):
+    chunks = []
+    for c in self.chunks:
+      if self.chunk_filter in c.GetName():
+        chunks.append(c)
     
+    return chunks
+  
   def get_chunk_prim(self, chunk_name:str) -> UsdPrim:
     return self.stage.GetPrimAtPath(f"{self.voxelmap}{chunk_name}")
 
@@ -97,35 +105,32 @@ class MWChunk():
     self.positions: list = self.chunk_prim.GetAttribute('positions').Get()
     self.indicies: list = self.chunk_prim.GetAttribute('protoIndices').Get()
     self.block_path: list = self.chunk_prim.GetRelationship('prototypes').GetTargets()
+    self.blocks = []
+    self.instance_blocks = []
     
     
-    self.blocks:  = []
-    
-    @property
-    def blocks(self) -> List[MWBlock]:
-      _blocks = []
+    def get_blocks(self):
+      _blocks= []
       for blocks in self.blocks_path:
         for block in blocks:
-          _blocks.append(MWBlock(block))
-          
-      return _blocks
-        
-
-
+          if not block in _blocks:
+            self.instance_blocks.append(MWBlock(block))
+          _blocks.append(block)
+          self.blocks.append(MWBlock(block))
+       
+    def get_block(self, list_index:int) -> str:
+      return self.instance_blocks[list_index]
 
 class MWBlock:
 
   def __init__(self):
-    super().__init__()
+    self.name: str = ""
+    self.id:str = ""
+    self.sub_id = ""
+    self.mesh_path: Gf.Path = ""
+    self.block_instance = ""
+    self.meshes: List[MWMesh] = []
     
-    self.block:list = []
-    self.block_name:list = []
-    self.block_id:list = []
-    self.block_sub_id:list = []
-    self.block_mesh_path:list = []
-    self.block_instance:list = []
-    
-    self.block()
 
   def block(self) -> None:
     _full_name = []
@@ -162,29 +167,10 @@ class MWBlock:
     self.block_mesh_path.append(_mesh)
     self.block_instance.append(_instance)
   
-  @property
-  def blocks_list(self) -> list:
-    return [blocks for blocks in self.blocks_path]
-    
-  def get_block(self, list_index:int) -> str:
-    return (f"{self.block[list_index]} {self.name[list_index]} {self.id[list_index]} {self.sub_id[list_index]}")
-  
-  def __repr__(self):
-    return (
-      f"{self.stage_ref}"
-    )
-  
-  def __str__(self):
-    return (
-      f"{self.stage_ref}"
-    )
-  
-class MWMesh(USDMinewaysBlock):
+class MWMesh:
   def __init__(self):
-    self.mesh = []
-    self.mesh_block = []
-    self.mesh_material = []
-    self.mesh_texture = []
+    self.material = []
+    self.texture = []
     self.mesh_instance = {}
     
     self.mesh()
