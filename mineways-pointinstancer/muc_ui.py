@@ -5,10 +5,16 @@ from .io_usd_import import MCU_OT_ImportWorld
 
 class MUC_InstanceBlock(bpy.types.PropertyGroup):
   """ Block info"""
+  
   def update(self, context):
     obj = context.obj
     mods = context.modifiers
-    mod = mods.get("MCU")
+    mod = mods.get("Mineways Geometry Nodes")
+    if mod:
+      node_tree = mod.node_group
+      if node_tree:
+        nodes = node_tree.nodes
+        
   
   block: bpy.types.PointerProperty(type=bpy.types.Object, update = update)
   block_id: bpy.props.IntProperty(name = "Block ID", default = 0)
@@ -26,9 +32,15 @@ class MUC_InstanceObject(bpy.types.PropertyGroup):
     item.block_nbt_id = sub_index
     return item
   
+  def get_active_block(self):
+    if self.blocks:
+      return self.blocks[self.block_index]
+  
+  @classmethod
   def register(cls):
     bpy.types.Object.muc = PointerProperty(type=cls)
-    
+  
+  @classmethod
   def unregister(cls):
     del bpy.types.Object.muc
 
@@ -39,14 +51,13 @@ class MUC_UL_OBJ(bpy.types.UIList):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             row = layout.row()
             obj = item.block
-
             row.prop(obj, "name", text="")
             
 
 class MUC_PT_BASE_Panel(bpy.types.Panel):
     """Base scene panel"""
-    bl_category = "MCUSD"
-    bl_label = "MCUSD"
+    bl_category = "USD"
+    bl_label = "Mineways Chunker"
     bl_region_type = 'UI'
 
     def draw(self, context: Context):
@@ -67,8 +78,11 @@ class MUC_PT_BASE_Panel(bpy.types.Panel):
             active_index_context_path="context.object.minecraft_usd.block_index"
         )
         if blocks:
-          active_block = blocks[block_index]
+          active_block = usd.get_active_block()
           col.prop(active_block, "block")
+          col.prop(active_block, "block_id")
+          col.prop(active_block, "block_sub_id")
+          
           mats = active_block.block.data.materials
           box = col.box()
           for mat in mats:

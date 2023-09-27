@@ -1,5 +1,5 @@
 bl_info = {
-    "name": "MCUSD importer",
+    "name": "Mineways USD chunker",
     "author": "Trung Phạm (zNight)",
     "version": (0, 0, 1),
     "blender": (3, 5, 0),
@@ -11,7 +11,7 @@ bl_info = {
 }
 
 mcprep_info = {
-  "name": "MCUSD importer"
+  "name": "Mineways USD chunker"
 }
 
 from . import io_usd_import

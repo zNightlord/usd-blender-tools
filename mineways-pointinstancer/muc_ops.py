@@ -390,8 +390,7 @@ class PointInstance(NodeUtilityMixin):
         else:
             pass
 
-def create_modifier(obj, modifier_type, **attrs)
-  
+def create_modifier(obj, modifier_type, **attrs):
   mod = obj.modifiers.new(modifier_type.capitalize(), modifier_type)
   for k,v in attrs.items():
     if hasattr(mod, k):
@@ -401,29 +400,46 @@ def create_modifier(obj, modifier_type, **attrs)
 
 ### Operator
 class MCU_Base:
-  use_new_blocklib: BoolProperty()
-  use_new_material: BoolProperty()
-  disable_instance: BoolProperty()
+  use_new_blocklib: BoolProperty(name="New blocklib instances collection")
+  use_new_material: BoolProperty(name="New materials for blocks")
+  disable_instance: BoolProperty(name="Disable Instances", default=True)
   
 class MCU_OT_ImportWorld(bpy.types.Operator, ImportHelper, MCU_Base):
   """Main functionality of the addon"""
   bl_idname = "mcu.import_world"
   
+  filepath  : StringProperty(name = 'Name',
+      description = "File Path", subtype='DIR_PATH')
+  filter_glob: StringProperty(default="*.usda", options={'HIDDEN'}, maxlen=255)
+  
+  filename_ext = '.usda'
+
+  def invoke(self, context, event):
+    wm = context.window_manager.fileselect_add(self)
+    return {'RUNNING_MODAL'}
+  
   def execute(self, context):
-    print("TODO")
-    
+    if self.use_new_blocklib:
+      pass
+    return {'FINISHED'}
+
+"""
 class MCU_OT_UpdateChunk(bpy.types.Operator)
-  """Update the chunk mesh with new data"""
+  \"""Update the chunk mesh with new data\"""
   
   def execute(self, context):
     print("TODO")
-    
+"""
     
 classes = (
-  
+  MCU_OT_ImportWorld,
 )
 
 def register():
+  for cls in classes:
+    register_class(cls)
+  
   
 def unregister():
-  
+  for cls in reversed(classes):
+    unregister_class(cls)
