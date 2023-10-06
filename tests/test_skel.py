@@ -54,5 +54,6 @@ def test_anim_anim():
   rig.from_json(bones)
   rig.stage.Save()
   rig.anim_from_json(anims)
+  rig.output()
   print("Hard part.")
   

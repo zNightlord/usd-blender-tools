@@ -263,6 +263,8 @@ class UsdRigWrite:
       frame = int(round(length*FPS))
     if self.stage.GetEndTimeCode() < length and extend_stage_end:
       self.stage.SetEndTimeCode(frame)
+      
+    xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/Anim_{name}"))
     
     anim = UsdSkel.Animation.Define(self.stage, f"/World/skel/{name}")
     
@@ -283,6 +285,8 @@ class UsdRigWrite:
         if f == 0:
           _bone_list.append(k)
           bone_list.append(self.topo[k])
+          xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/Anim_{name}/Anim_{name}_{k}"))
+          xform_prim = xform.GetPrim()
         if f == 1:
           anim.CreateJointsAttr().Set(bone_list)
         # Get the keyframes infomation
@@ -306,10 +310,13 @@ class UsdRigWrite:
               _t.append([0,0,0])
             elif k == "rotation":
               _r.append([0,0,0])
-      if frame:
-        anim.CreateTranslationsAttr().Set(_t, f)
-      else:
-        anim.CreateTranslationsAttr().Set(_t)
+        # attr = xform_prim.CreateAttribute('userProperties:', Sdf.ValueTypeNames.String)
+        # attr.Set(name)
+      print(_t)
+      # if frame:
+      #   anim.CreateTranslationsAttr().Set(_t, f)
+      # else:
+      #   anim.CreateTranslationsAttr().Set(_t)
       # anim_rot = {}
     
   
