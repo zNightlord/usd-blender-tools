@@ -56,4 +56,16 @@ def test_anim_anim():
   rig.anim_from_json(anims)
   rig.output()
   print("Hard part.")
-  
+
+def test_chicken():
+  path_geo = geom_url+"chicken.geo.json"
+  path_anim = anim_url+"chickrn.animation.json"
+  json = BedrockJSON()
+  bones = json.request_json(path_geo)
+  anims = json.request_json(path_anim)
+  rig = UsdRigWrite()
+  rig.create_stage("rig_output/chicken.usda")
+  rig.from_json(bones)
+  rig.stage.Save()
+  rig.anim_from_json(anims)
+  rig.output()
