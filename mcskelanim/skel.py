@@ -331,16 +331,14 @@ class UsdRigWrite:
                     has_rot = True
                     rot_keys[bk] = fv
                     
-              
-              rotate[k] = rot_keys
-              key = loc_keys if k == "location" else rot_keys
-              # has_keyframes = True
             else:
               if k == "location":
                 _t.append(key)
+                has_loc = True
                 loc_keys = {"0": key}
               elif k == "rotation":
                 _r.append(key)
+                has_rot = True
                 rot_keys = {"0": key}
             
             # Preverse the data in Xformable
