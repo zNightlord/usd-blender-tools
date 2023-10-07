@@ -285,7 +285,7 @@ class UsdRigWrite:
         if f == 0:
           _bone_list.append(k)
           bone_list.append(self.topo[k])
-          xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/AnimXform_{name}/Anim_{name}_{k}"))
+          xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/AnimXform_{name}/Anim_{name}_{k}")
           xform_prim = xform.GetPrim()
         if f == 1:
           anim.CreateJointsAttr().Set(bone_list)
@@ -293,13 +293,18 @@ class UsdRigWrite:
         for k in ["location", "rotation", "scale"]:
           key = v.get(k)
           if key:
+            has_keyframes = False
             if isinstance(key, dict):
               for fk, fv  in key.items():
+                loc_keys = {}
                 if round(float(fk)*FPS) == f:
                   if k == "location":
                     _t.append(fv)
+                    loc_keys[round(float(fk)*FPS)] = fv
                   elif k == "rotation":
                     _r.append(fv)
+              translate[k] = loc_keys
+              has_keyframes = True
             else:
               if k == "location":
                 _t.append(key)
