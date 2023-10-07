@@ -396,7 +396,7 @@ class UsdRigWrite:
       l = v.get("animation_length")
       name_compos = k.split(".", 2)
       if len(name_compos) == 3:
-        name = name_compos[2]
+        name = name_compos[2].replace(".", "_")
       else:
         name = i
       self.create_animation(f"{name}", l if l else 0, v.get("bones"))
