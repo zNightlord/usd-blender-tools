@@ -334,7 +334,7 @@ class UsdRigWrite:
             elif k == "rotation":
               _r.append([0,0,0])
               
-      translate[round(float(fk)*FPS)]] = _t
+      translate[round(float(fk)*FPS)] = _t
       rotate[round(float(fk)*FPS)] = _r
         
     print(rotate)
