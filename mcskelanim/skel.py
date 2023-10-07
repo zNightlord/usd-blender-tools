@@ -264,9 +264,9 @@ class UsdRigWrite:
     if self.stage.GetEndTimeCode() < length and extend_stage_end:
       self.stage.SetEndTimeCode(frame)
       
-    xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/Anim_{name}"))
+    xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/AnimXform_{name}")
     
-    anim = UsdSkel.Animation.Define(self.stage, f"/World/skel/{name}")
+    anim = UsdSkel.Animation.Define(self.stage, f"/World/skel/Anim_{name}")
     
     translate = {}
     rotate = {}
@@ -285,7 +285,7 @@ class UsdRigWrite:
         if f == 0:
           _bone_list.append(k)
           bone_list.append(self.topo[k])
-          xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/Anim_{name}/Anim_{name}_{k}"))
+          xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/AnimXform_{name}/Anim_{name}_{k}"))
           xform_prim = xform.GetPrim()
         if f == 1:
           anim.CreateJointsAttr().Set(bone_list)
