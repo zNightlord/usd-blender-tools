@@ -40,9 +40,9 @@ def mat3_to_vec_roll(mat: Gf.Matrix3d):
   roll = math.atan2(rollmat[0][2], rollmat[2][2])
   return vec, roll
 
-def vec_roll_to_mat3(vec: Union[Gf.Vec3,Vector], roll: float):
-    if isinstance(vec, Gf.Vec3):
-      target = Gf.Vec3((0, 0.1, 0))
+def vec_roll_to_mat3(vec: Union[Gf.Vec3d,Vector], roll: float):
+    if isinstance(vec, Gf.Vec3d):
+      target = Gf.Vec3d((0, 0.1, 0))
       nor = vec.GetNormalized()
       axis = target.GetCross(nor)
       if axis.GetDot(axis) > 0.0000000001:
