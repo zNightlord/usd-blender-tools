@@ -299,9 +299,7 @@ class UsdRigWrite:
           xform_prim = xform.GetPrim()
           xform.AddXformOp(UsdGeom.XformOp.TypeTransform).Set(loc_matrix(self.pivot[bk]))
                   
-        if f == 1:
-          anim.CreateJointsAttr().Set(bone_list)
-          if increased:
+        if f == 1 and increased:
             break
           
         # Get the keyframes infomation
@@ -339,10 +337,11 @@ class UsdRigWrite:
             elif k == "rotation":
               _r.append([0,0,0])
               
-      translate[f] = _t
-      rotate[f] = _r
+      translate[f] = loc_keys
+      rotate[f] = rot_keys
         
     print(rotate)
+    anim.CreateJointsAttr().Set(bone_list)
       # print(_t)
       # if frame:
       #   anim.CreateTranslationsAttr().Set(_t, f)
@@ -383,7 +382,7 @@ class UsdRigWrite:
       else:
         prev = c['name']
         prev_pivot[prev] = pivot
-        prev_topo[prev] = ""
+        prev_topo[prev] = prev
       
       topo.append(prev)
       bind.append(loc_matrix(lpivot))
