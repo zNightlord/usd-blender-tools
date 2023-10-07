@@ -3,6 +3,7 @@ import requests
 import numpy as np
 from typing import List, Optional, Union
 import math
+from mathutils import Vector
 
 from pxr import Usd, UsdGeom, UsdSkel
 from pxr import Sdf, Gf, Vt
