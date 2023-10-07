@@ -266,6 +266,9 @@ class UsdRigWrite:
       self.stage.SetEndTimeCode(frame)
       
     xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/AnimXform_{name}")
+    xform_prim = xform.GetPrim()
+    attr = xform_prim.CreateAttribute(f'userProperties:{k}Expr', Sdf.ValueTypeNames.String)
+    attr.Set(str(key))
     
     anim = UsdSkel.Animation.Define(self.stage, f"/World/skel/Anim_{name}")
     
@@ -281,6 +284,8 @@ class UsdRigWrite:
       _t = []
       _r = []
       _s = []
+      loc_keys = {}
+      rot_keys = {}
       for bk,bv in bones.items():
         # First loop read through the bone
         # Second loop add it in
@@ -301,16 +306,15 @@ class UsdRigWrite:
             # has_keyframes = False
             if isinstance(key, dict):
               for fk, fv  in key.items():
-                loc_keys = {}
-                rot_keys = {}
                 if round(float(fk)*FPS) == f:
                   if k == "location":
                     _t.append(fv)
-                    loc_keys[round(float(fk)*FPS)] = fv
+                    loc_keys[bk] = fv
                   elif k == "rotation":
                     _r.append(fv)
-                    rot_keys[round(float(fk)*FPS)] = fv
-              translate[k] = loc_keys
+                    rot_keys[bk] = fv
+                    
+              
               rotate[k] = rot_keys
               key = loc_keys if k == "location" else rot_keys
               # has_keyframes = True
@@ -319,15 +323,21 @@ class UsdRigWrite:
                 _t.append(key)
               elif k == "rotation":
                 _r.append(key)
-            attr = xform_prim.CreateAttribute(f'userProperties:{k}Expr', Sdf.ValueTypeNames.String)
-            attr.Set(str(key))
+            
+            # Preverse the data in Xformable
+            if k == 0:
+              attr = xform_prim.CreateAttribute(f'userProperties:{k}Expr', Sdf.ValueTypeNames.String)
+              attr.Set(str(key))
           else:
             if k == "location":
               _t.append([0,0,0])
             elif k == "rotation":
               _r.append([0,0,0])
+              
+      translate[round(float(fk)*FPS)]] = _t
+      rotate[round(float(fk)*FPS)] = _r
         
-        print(rotate)
+    print(rotate)
       # print(_t)
       # if frame:
       #   anim.CreateTranslationsAttr().Set(_t, f)
@@ -391,8 +401,10 @@ class UsdRigWrite:
       # print(dir(cube), ", dir(xform))
       # stage.Save()
   
-  def anim_from_json(self, anims: dict):
+  def anim_from_json(self, anims: dict, limit=0):
     for i,(k,v) in enumerate(anims.items()):
+      if limit != 0 and i == limit:
+        break
       l = v.get("animation_length")
       name_compos = k.split(".", 2)
       if len(name_compos) == 3:

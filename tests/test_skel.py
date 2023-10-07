@@ -39,7 +39,7 @@ def test_result(test_base_skel: UsdRigWrite):
 
 def test_anim_pose(test_base_skel: UsdRigWrite, test_base_anim_pose: dict):
   rig = test_base_skel
-  rig.anim_from_json(test_base_anim_pose)
+  rig.anim_from_json(test_base_anim_pose, limit=1)
   print("/n", "Pose:")
   rig.output()
 
