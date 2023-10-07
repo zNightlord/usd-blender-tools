@@ -275,7 +275,8 @@ class UsdRigWrite:
     bone_list = []
     _bone_list = []
 
-    
+    if frame == 0:
+      frame = 1
     for f in range(frame):
       _t = []
       _r = []
