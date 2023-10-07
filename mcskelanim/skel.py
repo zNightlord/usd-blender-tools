@@ -325,7 +325,7 @@ class UsdRigWrite:
                 _r.append(key)
             
             # Preverse the data in Xformable
-            if k == 0:
+            if f == 0:
               attr = xform_prim.CreateAttribute(f'userProperties:{k}Expr', Sdf.ValueTypeNames.String)
               attr.Set(str(key))
           else:
