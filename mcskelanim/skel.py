@@ -286,8 +286,6 @@ class UsdRigWrite:
         if f == 0:
           _bone_list.append(k)
           bone_list.append(self.topo[k])
-          xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/AnimXform_{name}/Anim_{name}_{k}")
-          xform_prim = xform.GetPrim()
         if f == 1:
           anim.CreateJointsAttr().Set(bone_list)
         # Get the keyframes infomation
@@ -316,9 +314,11 @@ class UsdRigWrite:
               _t.append([0,0,0])
             elif k == "rotation":
               _r.append([0,0,0])
+        xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/AnimXform_{name}/Anim_{name}_{k}")
+        xform_prim = xform.GetPrim()
         # attr = xform_prim.CreateAttribute('userProperties:', Sdf.ValueTypeNames.String)
         # attr.Set(name)
-      print(_t)
+      # print(_t)
       # if frame:
       #   anim.CreateTranslationsAttr().Set(_t, f)
       # else:
@@ -383,7 +383,8 @@ class UsdRigWrite:
   def anim_from_json(self, anims: dict):
     for i,(k,v) in enumerate(anims.items()):
       l = v.get("animation_length")
-      self.create_animation(f"anim_{i}", l if l else 0, v.get("bones"))
+      k = k.split(".")[2] if "animation." else i
+      self.create_animation(f"{k}", l if l else 0, v.get("bones"))
   
   def output(self):
     print_stage(self.stage)
