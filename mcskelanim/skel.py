@@ -310,7 +310,7 @@ class UsdRigWrite:
                     _r.append(fv)
                     rot_keys[round(float(fk)*FPS)] = fv
               translate[k] = loc_keys
-              rotation[k] = rot_keys
+              rotate[k] = rot_keys
               key = loc_keys if k == "location" else rot_keys
               # has_keyframes = True
             else:
@@ -326,7 +326,7 @@ class UsdRigWrite:
             elif k == "rotation":
               _r.append([0,0,0])
         
-        print(rotation)
+        print(rotate)
       # print(_t)
       # if frame:
       #   anim.CreateTranslationsAttr().Set(_t, f)
