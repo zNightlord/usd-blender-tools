@@ -272,7 +272,7 @@ class UsdRigWrite:
     
     anim = UsdSkel.Animation.Define(self.stage, f"/World/skel/Anim_{name}")
     anim_prim = anim.GetPrim()
-    for ak, av in kwargs:
+    for ak, av in kwargs.items():
       if isinstance(av, str):
         value_type = Sdf.ValueTypeNames.String
       elif isinstance(av, bool):
