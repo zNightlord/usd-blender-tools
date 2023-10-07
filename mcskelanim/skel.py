@@ -155,7 +155,7 @@ class UsdRigWrite:
       if ops:
         ops[0].Set(Gf.Vec3d([px,py,pz]))
       else:
-        xform.AddXformOp(UsdGeom.XformOp.TypeTransform).Set(Gf.Vec3d([px,py,pz]))
+        xform.AddXformOp(UsdGeom.XformOp.TypeTranslate).Set(Gf.Vec3d([px,py,pz]))
            
   
     attr = xform_prim.CreateAttribute('userProperties:blenderName:object', Sdf.ValueTypeNames.String)
