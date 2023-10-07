@@ -394,8 +394,12 @@ class UsdRigWrite:
   def anim_from_json(self, anims: dict):
     for i,(k,v) in enumerate(anims.items()):
       l = v.get("animation_length")
-      k = k.split(".")[2] if "animation." else i
-      self.create_animation(f"{k}", l if l else 0, v.get("bones"))
+      name_compos = k.split(".", 2)
+      if len(name_compos) == 3:
+        name = name_compos[2]
+      else:
+        name = i
+      self.create_animation(f"{name}", l if l else 0, v.get("bones"))
   
   def output(self):
     print_stage(self.stage)
