@@ -155,7 +155,7 @@ class UsdRigWrite:
       if ops:
         ops[0].Set(Gf.Vec3d([px,py,pz]))
       else:
-        xform.AddXformOp(UsdGeom.XformOp.TypeTranslate).Set(Gf.Vec3d([px,py,pz]))
+        xform.AddXformOp(UsdGeom.XformOp.TypeTransform).Set(Gf.Vec3d([px,py,pz]))
            
   
     attr = xform_prim.CreateAttribute('userProperties:blenderName:object', Sdf.ValueTypeNames.String)
@@ -280,44 +280,53 @@ class UsdRigWrite:
       _t = []
       _r = []
       _s = []
-      for k,v in bones.items():
+      for bk,bv in bones.items():
         # First loop read through the bone
         # Second loop add it in
         if f == 0:
-          _bone_list.append(k)
-          bone_list.append(self.topo[k])
+          _bone_list.append(bk)
+          bone_list.append(self.topo[bk])
+          xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/AnimXform_{name}/Anim_{name}_{bk}")
+          xform_prim = xform.GetPrim()
+          xform.AddXformOp(UsdGeom.XformOp.TypeTransform).Set(loc_matrix(self.pivot[bk]))
+                  
         if f == 1:
           anim.CreateJointsAttr().Set(bone_list)
+          
         # Get the keyframes infomation
         for k in ["location", "rotation", "scale"]:
-          key = v.get(k)
+          key = bv.get(k)
           if key:
-            has_keyframes = False
+            # has_keyframes = False
             if isinstance(key, dict):
               for fk, fv  in key.items():
                 loc_keys = {}
+                rot_keys = {}
                 if round(float(fk)*FPS) == f:
                   if k == "location":
                     _t.append(fv)
                     loc_keys[round(float(fk)*FPS)] = fv
                   elif k == "rotation":
                     _r.append(fv)
+                    rot_keys[round(float(fk)*FPS)] = fv
               translate[k] = loc_keys
-              has_keyframes = True
+              rotation[k] = rot_keys
+              key = loc_keys if k == "location" else rot_keys
+              # has_keyframes = True
             else:
               if k == "location":
                 _t.append(key)
               elif k == "rotation":
                 _r.append(key)
+            attr = xform_prim.CreateAttribute(f'userProperties:{k}Expr', Sdf.ValueTypeNames.String)
+            attr.Set(str(key))
           else:
             if k == "location":
               _t.append([0,0,0])
             elif k == "rotation":
               _r.append([0,0,0])
-        xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/AnimXform_{name}/Anim_{name}_{k}")
-        xform_prim = xform.GetPrim()
-        # attr = xform_prim.CreateAttribute('userProperties:', Sdf.ValueTypeNames.String)
-        # attr.Set(name)
+        
+        print(rotation)
       # print(_t)
       # if frame:
       #   anim.CreateTranslationsAttr().Set(_t, f)
@@ -365,6 +374,7 @@ class UsdRigWrite:
       rest.append(loc_matrix(pivot))
    
     self.topo = prev_topo
+    self.pivot = prev_pivot
    
     skel = self.create_skeleton(topo, Vt.Matrix4dArray(rest), Vt.Matrix4dArray(bind), name="skel", path="/World")
     for ib,c in enumerate(bones):
