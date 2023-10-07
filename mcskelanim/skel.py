@@ -256,7 +256,7 @@ class UsdRigWrite:
   def create_animation(
     self, 
     name: str, length:float, bones:dict, 
-    extend_stage_end: bool=True
+    extend_stage_end: bool=True, **kwargs
   ):
     # Convert length to integer frame, set
     frame = 0
@@ -271,6 +271,16 @@ class UsdRigWrite:
     attr.Set(name)
     
     anim = UsdSkel.Animation.Define(self.stage, f"/World/skel/Anim_{name}")
+    anim_prim = anim.GetPrim()
+    for ak, av in kwargs:
+      if isinstance(av, str):
+        value_type = Sdf.ValueTypeNames.String
+      elif isinstance(av, bool):
+        value_type = Sdf.ValueTypeNames.Bool
+      else:
+        continue
+      attr = xform_prim.CreateAttribute(f'userProperties:anim{ak.capitalize()}', value_type)
+      attr.Set(av)
     
     translate = {}
     rotate = {}
@@ -282,13 +292,15 @@ class UsdRigWrite:
     if frame == 0:
       frame = 1
       increased = True
-      
+    
+    loc_keys = {}
+    rot_keys = {}
     for f in range(frame):
       _t = []
       _r = []
       _s = []
-      loc_keys = {}
-      rot_keys = {}
+      has_loc = False
+      has_rot = False
       for bk,bv in bones.items():
         # First loop read through the bone
         # Second loop add it in
@@ -312,9 +324,11 @@ class UsdRigWrite:
                 if round(float(fk)*FPS) == f:
                   if k == "location":
                     _t.append(fv)
+                    has_loc = True
                     loc_keys[bk] = fv
                   elif k == "rotation":
                     _r.append(fv)
+                    has_rot = True
                     rot_keys[bk] = fv
                     
               
@@ -324,8 +338,10 @@ class UsdRigWrite:
             else:
               if k == "location":
                 _t.append(key)
+                loc_keys = {"0": key}
               elif k == "rotation":
                 _r.append(key)
+                rot_keys = {"0": key}
             
             # Preverse the data in Xformable
             if f == 0:
@@ -336,9 +352,11 @@ class UsdRigWrite:
               _t.append([0,0,0])
             elif k == "rotation":
               _r.append([0,0,0])
-              
-      translate[f] = loc_keys
-      rotate[f] = rot_keys
+      
+      if has_loc:
+        translate[f] = loc_keys
+      if has_rot:
+        rotate[f] = rot_keys
         
     print(rotate)
     anim.CreateJointsAttr().Set(bone_list)
@@ -415,7 +433,7 @@ class UsdRigWrite:
         name = name_compos[2].replace(".", "_")
       else:
         name = i
-      self.create_animation(f"{name}", l if l else 0, v.get("bones"))
+      self.create_animation(f"{name}", l if l else 0, v.get("bones"), loop=v.get("loop", False), start_delay=v.get("start_delay"))
   
   def output(self):
     print_stage(self.stage)
