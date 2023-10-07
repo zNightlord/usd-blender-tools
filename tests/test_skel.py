@@ -59,7 +59,7 @@ def test_anim_anim():
 
 def test_chicken():
   path_geo = geom_url+"chicken.geo.json"
-  path_anim = anim_url+"chickrn.animation.json"
+  path_anim = anim_url+"chicken.animation.json"
   json = BedrockJSON()
   bones = json.request_json(path_geo)
   anims = json.request_json(path_anim)
