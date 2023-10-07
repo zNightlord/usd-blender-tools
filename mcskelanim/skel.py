@@ -267,8 +267,8 @@ class UsdRigWrite:
       
     xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/AnimXform_{name}")
     xform_prim = xform.GetPrim()
-    attr = xform_prim.CreateAttribute(f'userProperties:{k}Expr', Sdf.ValueTypeNames.String)
-    attr.Set(str(key))
+    attr = xform_prim.CreateAttribute(f'userProperties:mainAnimXform', Sdf.ValueTypeNames.String)
+    attr.Set(name)
     
     anim = UsdSkel.Animation.Define(self.stage, f"/World/skel/Anim_{name}")
     
