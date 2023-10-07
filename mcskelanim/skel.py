@@ -278,8 +278,11 @@ class UsdRigWrite:
     bone_list = []
     _bone_list = []
 
+    increased = False
     if frame == 0:
       frame = 1
+      increased = True
+      
     for f in range(frame):
       _t = []
       _r = []
@@ -298,6 +301,8 @@ class UsdRigWrite:
                   
         if f == 1:
           anim.CreateJointsAttr().Set(bone_list)
+          if increased:
+            break
           
         # Get the keyframes infomation
         for k in ["location", "rotation", "scale"]:
@@ -334,8 +339,8 @@ class UsdRigWrite:
             elif k == "rotation":
               _r.append([0,0,0])
               
-      translate[round(float(fk)*FPS)] = _t
-      rotate[round(float(fk)*FPS)] = _r
+      translate[f] = _t
+      rotate[f] = _r
         
     print(rotate)
       # print(_t)
