@@ -355,6 +355,11 @@ class UsdRigWrite:
         prev_pivot[prev] = lpivot
         prev_topo[prev] = t #f"{parent_topo}/{prev}"
         prev = t
+      else:
+        prev = c['name']
+        prev_pivot[prev] = pivot
+        prev_topo[prev] = ""
+      
       topo.append(prev)
       bind.append(loc_matrix(lpivot))
       rest.append(loc_matrix(pivot))
