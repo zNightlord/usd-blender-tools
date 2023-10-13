@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 import math
 from mathutils import Vector, Matrix
 
-from pxr import Usd, UsdGeom, UsdSkel
+from pxr import Usd, UsdGeom, UsdSkel, UsdUtils
 from pxr import Sdf, Gf, Vt
 
 FPS = 24
@@ -435,3 +435,9 @@ class UsdRigWrite:
   
   def output(self):
     print_stage(self.stage)
+  
+  @classmethod
+  def zip(cls, usd_path, path):
+    UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(usd_path), path)
+    
+    

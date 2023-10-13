@@ -36,6 +36,8 @@ def test_result(test_base_skel: UsdRigWrite):
   rig = test_base_skel
   # rig.output()
   rig.stage.Save()
+  UsdRigWrite.zip("rig_output/armor_stand.usda", "rig_output/armor_stand.usdz")
+  
 
 def test_anim_pose(test_base_skel: UsdRigWrite, test_base_anim_pose: dict):
   rig = test_base_skel
@@ -53,6 +55,7 @@ def test_anim_anim():
   rig.create_stage("rig_output/phantom.usda")
   rig.from_json(bones)
   rig.stage.Save()
+  UsdRigWrite.zip("rig_output/phantom.usda", "rig_output/phantom.usdz")
   rig.anim_from_json(anims)
   rig.output()
   print("Hard part.")
@@ -67,5 +70,6 @@ def test_chicken():
   rig.create_stage("rig_output/chicken.usda")
   rig.from_json(bones)
   rig.stage.Save()
+  UsdRigWrite.zip("rig_output/chicken.usda", "rig_output/chicken.usdz")
   rig.anim_from_json(anims)
   rig.output()
