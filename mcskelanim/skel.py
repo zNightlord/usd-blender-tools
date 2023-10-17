@@ -106,6 +106,7 @@ class UsdRigWrite:
     self.stage: Optional[Usd.Stage]= None
     self.skel: Optional[UsdSkel.Skeleton] = None
     self.cube_xforms: Optional[List[UsdGeom.Xform]] = None
+    self.materials = []
     
     self.bind_skel: Optional[UsdSkel.BindingAPI] = None
     self.root: Optional[UsdSkel.Root] = None
@@ -136,7 +137,8 @@ class UsdRigWrite:
     self, name: str, path: Sdf.Path | str="", 
     pivot: tuple=(0,0,0), 
     origin: tuple=(0,0,0), size: tuple =(1,2,5), 
-    uv: tuple=(0,0), tex_res:tuple=(64,64)
+    uv: tuple=(0,0), tex_res:tuple=(64,64),
+    mat = None
   ):
     p = self.pixel
     x,y,z = size
@@ -147,8 +149,8 @@ class UsdRigWrite:
     orx, ory, orz = origin
     
     stage = self.stage
-    
-    xform = UsdGeom.Xform.Define(stage, f'{path}/{name}')
+    cube_path = f'{path}/{name}'
+    xform = UsdGeom.Xform.Define(stage, cube_path)
     xform_prim = xform.GetPrim()
     if pivot != (0,0,0):
       ops = xform.GetOrderedXformOps()
@@ -163,7 +165,7 @@ class UsdRigWrite:
     if size == (0,0,0):
       return xform, None
   
-    cube = UsdGeom.Mesh.Define(stage, f'{path}/{name}/mesh_{name}')
+    cube = UsdGeom.Mesh.Define(stage, f'{cube_path}/mesh_{name}')
     cube_prim = cube.GetPrim()
   
     verts = [
@@ -206,6 +208,8 @@ class UsdRigWrite:
     for i,c in enumerate(uv):
       u,v = uv[i]
       uv[i] = (u+ox, v+oy)
+    
+    # Attibutes
     attr1 = cube_prim.CreateAttribute('userProperties:blenderName:mesh', Sdf.ValueTypeNames.String)
     attr1.Set(f"mesh_{name}")# * len(verts))
     cube.CreatePointsAttr(verts)
@@ -219,7 +223,44 @@ class UsdRigWrite:
     texcoords.Set(uv)
     attr = cube_prim.CreateAttribute('userProperties:uvBB:mesh', Sdf.ValueTypeNames.Float2Array)
     attr.Set(uv_extent)
+    
+    # Set Materials
+    if mat == None:
+      if not self.materials:
+        mat = self.create_material(self.stage.GetName(), "/tex/chicken.png", path=cube_path)
+        self.materials.append(mat)
+      self.assign_mesh_mat(mesh, self.materials[0])
     return xform
+  
+  def create_material(self, name, texture, path="/World"):
+    path = f"{path}/{name}"
+    material = UsdShade.Material.Define(stage, path)
+
+    pbrShader = UsdShade.Shader.Define(stage, f"{path}/Shader")
+    pbrShader.CreateIdAttr("UsdPreviewSurface")
+    pbrShader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(0.0)
+    pbrShader.CreateInput("metallic", Sdf.ValueTypeNames.Float).Set(0.0)
+    
+    material.CreateSurfaceOutput().ConnectToSource(pbrShader.ConnectableAPI(), "surface")
+    
+    stReader = UsdShade.Shader.Define(stage, f'{path}/stReader')
+    stReader.CreateIdAttr('UsdPrimvarReader_float2')
+    
+    diffuseTextureSampler = UsdShade.Shader.Define(stage, f'{path}/diffuseTexture')
+    diffuseTextureSampler.CreateIdAttr('UsdUVTexture')
+    diffuseTextureSampler.CreateInput('file', Sdf.ValueTypeNames.Asset).Set(texture)
+    diffuseTextureSampler.CreateInput("st", Sdf.ValueTypeNames.Float2).ConnectToSource(stReader.ConnectableAPI(), 'result')
+    diffuseTextureSampler.CreateOutput('rgb', Sdf.ValueTypeNames.Float3)
+    pbrShader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).ConnectToSource(diffuseTextureSampler.ConnectableAPI(), 'rgb')
+    stInput = material.CreateInput('frame:stPrimvarName', Sdf.ValueTypeNames.Token)
+    stInput.Set('st')
+    
+    stReader.CreateInput('varname',Sdf.ValueTypeNames.Token).ConnectToSource(stInput)
+    return material
+  
+  def assign_mesh_mat(self, mesh, material):
+    mesh.GetPrim().ApplyAPI(UsdShade.MaterialBindingAPI)
+    UsdShade.MaterialBindingAPI(mesh).Bind(material)
   
   def create_skeleton(self, joints, rest, bind, name="Skel", path="/World"):
     stage = self.stage
@@ -365,6 +406,7 @@ class UsdRigWrite:
       #   anim.CreateTranslationsAttr().Set(_t)
       # anim_rot = {}
     
+  mats = ["Texture"] # For now
   
   def from_json(self, bones):
     stage = self.stage
@@ -408,11 +450,13 @@ class UsdRigWrite:
     self.pivot = prev_pivot
    
     skel = self.create_skeleton(topo, Vt.Matrix4dArray(rest), Vt.Matrix4dArray(bind), name="skel", path="/World")
+    
+    for m in self.mats:
     for ib,c in enumerate(bones):
       cubes = c.get('cubes', [])
       pivot = c.get('pivot', [0,0,0])
       if cubes == []:
-        self.create_cube(name=c['name'], pivot=pivot, size=(0,0,0), path=skel.GetPath())
+        self.create_cube(name=c['name'], pivot=pivot, size=(0,0,0), path=skel.GetPath(), mat=)
       else:
         for i,cu in enumerate(cubes):
           cube = self.create_cube(name=c['name']+f"_{i}", pivot=(0,0,0), origin=cu['origin'], size=cu['size'], path=skel.GetPath())
