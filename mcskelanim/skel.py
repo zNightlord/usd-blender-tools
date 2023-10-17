@@ -102,6 +102,7 @@ class BedrockJSON:
 
 class UsdRigWrite:
   pixel = 0.03125 # Geometry pixel per cm
+  name = "Default"
   def __init__(self):
     self.stage: Optional[Usd.Stage]= None
     self.skel: Optional[UsdSkel.Skeleton] = None
@@ -112,6 +113,9 @@ class UsdRigWrite:
     self.root: Optional[UsdSkel.Root] = None
     
     self.use_matrixattr: bool = False
+  
+  def set_name(self, value):
+    self.name = value
   
   def create_stage(self, name, start=0, end=0) -> Usd.Stage:
     if not name.endswith('.usda'):
@@ -227,7 +231,7 @@ class UsdRigWrite:
     # Set Materials
     if mat == None:
       if not self.materials:
-        mat = self.create_material(self.stage.GetName(), "/tex/chicken.png", path=cube_path)
+        mat = self.create_material(self.name, "/tex/chicken.png", path=cube_path)
         self.materials.append(mat)
       self.assign_mesh_mat(cube, self.materials[0])
     return xform

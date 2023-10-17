@@ -25,6 +25,7 @@ def test_base_anim_pose() -> dict:
 @pytest.fixture
 def test_base_skel(test_base_geom: list) -> UsdRigWrite:
   rig = UsdRigWrite()
+  rig.set_name("armor_stand")
   rig.create_stage("rig_output/armor_stand.usda")
   rig.from_json(test_base_geom)
   return rig
@@ -52,6 +53,7 @@ def test_anim_anim():
   bones = json.request_json(path_geo)
   anims = json.request_json(path_anim)
   rig = UsdRigWrite()
+  rig.set_name("phantom")
   rig.create_stage("rig_output/phantom.usda")
   rig.from_json(bones)
   rig.stage.Save()
@@ -67,6 +69,7 @@ def test_chicken():
   bones = json.request_json(path_geo)
   anims = json.request_json(path_anim)
   rig = UsdRigWrite()
+  rig.set_name("chicken")
   rig.create_stage("rig_output/chicken.usda")
   rig.from_json(bones)
   rig.stage.Save()
