@@ -229,7 +229,7 @@ class UsdRigWrite:
       if not self.materials:
         mat = self.create_material(self.stage.GetName(), "/tex/chicken.png", path=cube_path)
         self.materials.append(mat)
-      self.assign_mesh_mat(mesh, self.materials[0])
+      self.assign_mesh_mat(cube, self.materials[0])
     return xform
   
   def create_material(self, name, texture, path="/World"):
