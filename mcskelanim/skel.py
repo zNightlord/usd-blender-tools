@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 import math
 from mathutils import Vector, Matrix
 
-from pxr import Usd, UsdGeom, UsdSkel, UsdUtils
+from pxr import Usd, UsdGeom, UsdSkel, UsdShade, UsdUtils
 from pxr import Sdf, Gf, Vt
 
 FPS = 24
@@ -234,19 +234,19 @@ class UsdRigWrite:
   
   def create_material(self, name, texture, path="/World"):
     path = f"{path}/{name}"
-    material = UsdShade.Material.Define(stage, path)
+    material = UsdShade.Material.Define(self.stage, path)
 
-    pbrShader = UsdShade.Shader.Define(stage, f"{path}/Shader")
+    pbrShader = UsdShade.Shader.Define(self.stage, f"{path}/Shader")
     pbrShader.CreateIdAttr("UsdPreviewSurface")
     pbrShader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(0.0)
     pbrShader.CreateInput("metallic", Sdf.ValueTypeNames.Float).Set(0.0)
     
     material.CreateSurfaceOutput().ConnectToSource(pbrShader.ConnectableAPI(), "surface")
     
-    stReader = UsdShade.Shader.Define(stage, f'{path}/stReader')
+    stReader = UsdShade.Shader.Define(self.stage, f'{path}/stReader')
     stReader.CreateIdAttr('UsdPrimvarReader_float2')
     
-    diffuseTextureSampler = UsdShade.Shader.Define(stage, f'{path}/diffuseTexture')
+    diffuseTextureSampler = UsdShade.Shader.Define(self.stage, f'{path}/diffuseTexture')
     diffuseTextureSampler.CreateIdAttr('UsdUVTexture')
     diffuseTextureSampler.CreateInput('file', Sdf.ValueTypeNames.Asset).Set(texture)
     diffuseTextureSampler.CreateInput("st", Sdf.ValueTypeNames.Float2).ConnectToSource(stReader.ConnectableAPI(), 'result')
