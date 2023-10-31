@@ -207,7 +207,7 @@ class UsdRigWrite:
     ]
     uv_extent = [uv[11], uv[4]]
     for i, v in enumerate(verts):
-      verts[i] = v[0] * x + orx, v[1] * y + ory, v[2] * z + orz
+      verts[i] = v[0] * x, v[1] * y, v[2] * z
           
     for i,c in enumerate(uv):
       u,v = uv[i]
