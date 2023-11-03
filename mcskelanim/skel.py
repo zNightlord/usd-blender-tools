@@ -236,8 +236,9 @@ class UsdRigWrite:
       self.assign_mesh_mat(cube, self.materials[0])
     return xform
   
-  def create_material(self, name, texture, path="/World"):
-    path = f"{path}/{name}"
+  def create_material(self, name, texture):
+    path = f"/World/Materials/{name}"
+    matScope = UsdGeom.Scope.Define(self.stage, "/World/Materials")
     material = UsdShade.Material.Define(self.stage, path)
 
     pbrShader = UsdShade.Shader.Define(self.stage, f"{path}/Shader")
