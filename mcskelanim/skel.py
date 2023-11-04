@@ -1,9 +1,11 @@
 import os
 import requests
 import numpy as np
-from typing import List, Optional
+from typing import List, Optional, Union
+import math
+from mathutils import Vector, Matrix
 
-from pxr import Usd, UsdGeom, UsdSkel
+from pxr import Usd, UsdGeom, UsdSkel, UsdShade, UsdUtils
 from pxr import Sdf, Gf, Vt
 
 FPS = 24
@@ -23,6 +25,52 @@ def loc_matrix(location = (0,0,0), rotation=None):
 
 def convert_np_to_vt(my_array: np.ndarray) -> Vt.Vec3fArray:
     return Vt.Vec3fArray.FromNumpy(my_array)
+
+def mat3_to_vec_roll(mat: Gf.Matrix3d):
+  if isinstance(mat, Gf.Matrix3d):
+    vec = mat.GetColumn(1)
+    vecmat = vec_roll_to_mat3(vec, 0)
+    vecmatinv = vecmat.GetInverse()
+    rollmat = vecmatinv * mat
+  else:
+    vec = mat.col[1]
+    vecmat = vec_roll_to_mat3(vec, 0)
+    vecmatinv = vecmat.inverted()
+    rollmat = vecmatinv @ mat
+  roll = math.atan2(rollmat[0][2], rollmat[2][2])
+  return vec, roll
+
+def vec_roll_to_mat3(vec: Union[Gf.Vec3d,Vector], roll: float):
+    if isinstance(vec, Gf.Vec3d):
+      target = Gf.Vec3d((0, 0.1, 0))
+      nor = vec.GetNormalized()
+      axis = target.GetCross(nor)
+      if axis.GetDot(axis) > 0.0000000001:
+        axis.GetNormalized()
+        theta = target.GetAngle(nor)
+        bMatrix = Gf.Matrix4d().SetRotation(Gf.Rotation(theta, 3, axis))
+      else:
+        updown = 1 if target.dot(nor) > 0 else -1
+        bMatrix = Gf.Matrix4d().SetScale(Gf.Size3(updown, 3))
+        bMatrix[2][2] = 1.0
+      rMatrix = Gf.Matrix4d().SetRotation(Gf.Rotation(roll, 3, nor))
+      mat = rMatrix * bMatrix
+    else:
+      target = Vector((0, 0.1, 0))
+      nor = vec.normalized()
+      axis = target.cross(nor)
+      if axis.dot(axis) > 0.0000000001:
+        axis.normalize()
+        theta = target.angle(nor)
+        bMatrix = Matrix.Rotation(theta, 3, axis)
+      else:
+        updown = 1 if target.dot(nor) > 0 else -1
+        bMatrix = Matrix.Scale(updown, 3)               
+        bMatrix[2][2] = 1.0
+
+      rMatrix = Matrix.Rotation(roll, 3, nor)
+      mat = rMatrix @ bMatrix
+      return mat
 
 
 class BedrockJSON:
@@ -54,13 +102,20 @@ class BedrockJSON:
 
 class UsdRigWrite:
   pixel = 0.03125 # Geometry pixel per cm
+  name = "Default"
   def __init__(self):
     self.stage: Optional[Usd.Stage]= None
     self.skel: Optional[UsdSkel.Skeleton] = None
     self.cube_xforms: Optional[List[UsdGeom.Xform]] = None
+    self.materials = []
     
     self.bind_skel: Optional[UsdSkel.BindingAPI] = None
     self.root: Optional[UsdSkel.Root] = None
+    
+    self.use_matrixattr: bool = False
+  
+  def set_name(self, value):
+    self.name = value
   
   def create_stage(self, name, start=0, end=0) -> Usd.Stage:
     if not name.endswith('.usda'):
@@ -86,7 +141,8 @@ class UsdRigWrite:
     self, name: str, path: Sdf.Path | str="", 
     pivot: tuple=(0,0,0), 
     origin: tuple=(0,0,0), size: tuple =(1,2,5), 
-    uv: tuple=(0,0), tex_res:tuple=(64,64)
+    uv: tuple=(0,0), tex_res:tuple=(64,64),
+    mat = None
   ):
     p = self.pixel
     x,y,z = size
@@ -97,8 +153,8 @@ class UsdRigWrite:
     orx, ory, orz = origin
     
     stage = self.stage
-    
-    xform = UsdGeom.Xform.Define(stage, f'{path}/{name}')
+    cube_path = f'{path}/{name}'
+    xform = UsdGeom.Xform.Define(stage, cube_path)
     xform_prim = xform.GetPrim()
     if pivot != (0,0,0):
       ops = xform.GetOrderedXformOps()
@@ -113,7 +169,7 @@ class UsdRigWrite:
     if size == (0,0,0):
       return xform, None
   
-    cube = UsdGeom.Mesh.Define(stage, f'{path}/{name}/mesh_{name}')
+    cube = UsdGeom.Mesh.Define(stage, f'{cube_path}/mesh_{name}')
     cube_prim = cube.GetPrim()
   
     verts = [
@@ -151,11 +207,13 @@ class UsdRigWrite:
     ]
     uv_extent = [uv[11], uv[4]]
     for i, v in enumerate(verts):
-          verts[i] = v[0] * x + orx*p, v[1] * y + ory*p, v[2] * z + orz*p
+      verts[i] = v[0] * x + px, v[1] * y +py, v[2] * z + pz
           
     for i,c in enumerate(uv):
       u,v = uv[i]
       uv[i] = (u+ox, v+oy)
+    
+    # Attibutes
     attr1 = cube_prim.CreateAttribute('userProperties:blenderName:mesh', Sdf.ValueTypeNames.String)
     attr1.Set(f"mesh_{name}")# * len(verts))
     cube.CreatePointsAttr(verts)
@@ -169,7 +227,45 @@ class UsdRigWrite:
     texcoords.Set(uv)
     attr = cube_prim.CreateAttribute('userProperties:uvBB:mesh', Sdf.ValueTypeNames.Float2Array)
     attr.Set(uv_extent)
+    
+    # Set Materials
+    if mat == None:
+      if not self.materials:
+        mat = self.create_material(self.name, "/tex/chicken.png")
+        self.materials.append(mat)
+      self.assign_mesh_mat(cube, self.materials[0])
     return xform
+  
+  def create_material(self, name, texture):
+    path = f"/World/Materials/{name}"
+    matScope = UsdGeom.Scope.Define(self.stage, "/World/Materials")
+    material = UsdShade.Material.Define(self.stage, path)
+
+    pbrShader = UsdShade.Shader.Define(self.stage, f"{path}/Shader")
+    pbrShader.CreateIdAttr("UsdPreviewSurface")
+    pbrShader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(0.0)
+    pbrShader.CreateInput("metallic", Sdf.ValueTypeNames.Float).Set(0.0)
+    
+    material.CreateSurfaceOutput().ConnectToSource(pbrShader.ConnectableAPI(), "surface")
+    
+    stReader = UsdShade.Shader.Define(self.stage, f'{path}/stReader')
+    stReader.CreateIdAttr('UsdPrimvarReader_float2')
+    
+    diffuseTextureSampler = UsdShade.Shader.Define(self.stage, f'{path}/diffuseTexture')
+    diffuseTextureSampler.CreateIdAttr('UsdUVTexture')
+    diffuseTextureSampler.CreateInput('file', Sdf.ValueTypeNames.Asset).Set(texture)
+    diffuseTextureSampler.CreateInput("st", Sdf.ValueTypeNames.Float2).ConnectToSource(stReader.ConnectableAPI(), 'result')
+    diffuseTextureSampler.CreateOutput('rgb', Sdf.ValueTypeNames.Float3)
+    pbrShader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).ConnectToSource(diffuseTextureSampler.ConnectableAPI(), 'rgb')
+    stInput = material.CreateInput('frame:stPrimvarName', Sdf.ValueTypeNames.Token)
+    stInput.Set('st')
+    
+    stReader.CreateInput('varname',Sdf.ValueTypeNames.Token).ConnectToSource(stInput)
+    return material
+  
+  def assign_mesh_mat(self, mesh, material):
+    mesh.GetPrim().ApplyAPI(UsdShade.MaterialBindingAPI)
+    UsdShade.MaterialBindingAPI(mesh).Bind(material)
   
   def create_skeleton(self, joints, rest, bind, name="Skel", path="/World"):
     stage = self.stage
@@ -200,12 +296,13 @@ class UsdRigWrite:
       weights = [1] * 8
     joint_weight.Set(weights)
     identity = Gf.Matrix4d().SetIdentity()
-    bind_geom.CreateGeomBindTransformAttr(identity)
+    if self.use_matrixattr:
+      bind_geom.CreateGeomBindTransformAttr(identity)
   
   def create_animation(
     self, 
     name: str, length:float, bones:dict, 
-    extend_stage_end: bool=True
+    extend_stage_end: bool=True, **kwargs
   ):
     # Convert length to integer frame, set
     frame = 0
@@ -213,8 +310,23 @@ class UsdRigWrite:
       frame = int(round(length*FPS))
     if self.stage.GetEndTimeCode() < length and extend_stage_end:
       self.stage.SetEndTimeCode(frame)
+      
+    xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/AnimXform_{name}")
+    xform_prim = xform.GetPrim()
+    attr = xform_prim.CreateAttribute(f'userProperties:mainAnimXform', Sdf.ValueTypeNames.String)
+    attr.Set(name)
     
-    anim = UsdSkel.Animation.Define(self.stage, f"/World/skel/{name}")
+    anim = UsdSkel.Animation.Define(self.stage, f"/World/skel/Anim_{name}")
+    anim_prim = anim.GetPrim()
+    for ak, av in kwargs.items():
+      if isinstance(av, str):
+        value_type = Sdf.ValueTypeNames.String
+      elif isinstance(av, bool):
+        value_type = Sdf.ValueTypeNames.Bool
+      else:
+        continue
+      attr = xform_prim.CreateAttribute(f'userProperties:anim{ak.capitalize()}', value_type)
+      attr.Set(av)
     
     translate = {}
     rotate = {}
@@ -222,46 +334,84 @@ class UsdRigWrite:
     bone_list = []
     _bone_list = []
 
+    increased = False
+    if frame == 0:
+      frame = 1
+      increased = True
     
+    loc_keys = {}
+    rot_keys = {}
     for f in range(frame):
       _t = []
       _r = []
       _s = []
-      for k,v in bones.items():
+      has_loc = False
+      has_rot = False
+      for bk,bv in bones.items():
         # First loop read through the bone
         # Second loop add it in
         if f == 0:
-          _bone_list.append(k)
-          bone_list.append(self.topo[k])
-        if f == 1:
-          anim.CreateJointsAttr().Set(bone_list)
+          _bone_list.append(bk)
+          bone_list.append(self.topo[bk])
+          xform = UsdGeom.Xform.Define(self.stage, f"/World/skel/AnimXform_{name}/Anim_{name}_{bk}")
+          xform_prim = xform.GetPrim()
+          xform.AddXformOp(UsdGeom.XformOp.TypeTransform).Set(loc_matrix(self.pivot[bk]))
+                  
+        if f == 1 and increased:
+            break
+          
         # Get the keyframes infomation
         for k in ["location", "rotation", "scale"]:
-          key = v.get(k)
+          key = bv.get(k)
           if key:
+            # has_keyframes = False
             if isinstance(key, dict):
               for fk, fv  in key.items():
                 if round(float(fk)*FPS) == f:
                   if k == "location":
                     _t.append(fv)
+                    has_loc = True
+                    loc_keys[bk] = fv
                   elif k == "rotation":
                     _r.append(fv)
+                    has_rot = True
+                    rot_keys[bk] = fv
+                    
             else:
               if k == "location":
                 _t.append(key)
+                has_loc = True
+                loc_keys = {"0": key}
               elif k == "rotation":
                 _r.append(key)
+                has_rot = True
+                rot_keys = {"0": key}
+            
+            # Preverse the data in Xformable
+            if f == 0:
+              attr = xform_prim.CreateAttribute(f'userProperties:{k}Expr', Sdf.ValueTypeNames.String)
+              attr.Set(str(key))
           else:
             if k == "location":
               _t.append([0,0,0])
             elif k == "rotation":
               _r.append([0,0,0])
-      if frame:
-        anim.CreateTranslationsAttr().Set(_t, f)
-      else:
-        anim.CreateTranslationsAttr().Set(_t)
+      
+      if has_loc:
+        translate[f] = loc_keys
+      if has_rot:
+        rotate[f] = rot_keys
+        
+    print(rotate)
+    anim.CreateJointsAttr().Set(bone_list)
+      # print(_t)
+      # if frame:
+      #   anim.CreateTranslationsAttr().Set(_t, f)
+      # else:
+      #   anim.CreateTranslationsAttr().Set(_t)
       # anim_rot = {}
     
+  mats = ["Texture"] # For now
   
   def from_json(self, bones):
     stage = self.stage
@@ -292,13 +442,20 @@ class UsdRigWrite:
         prev_pivot[prev] = lpivot
         prev_topo[prev] = t #f"{parent_topo}/{prev}"
         prev = t
+      else:
+        prev = c['name']
+        prev_pivot[prev] = pivot
+        prev_topo[prev] = prev
+      
       topo.append(prev)
       bind.append(loc_matrix(lpivot))
       rest.append(loc_matrix(pivot))
    
     self.topo = prev_topo
+    self.pivot = prev_pivot
    
     skel = self.create_skeleton(topo, Vt.Matrix4dArray(rest), Vt.Matrix4dArray(bind), name="skel", path="/World")
+    
     for ib,c in enumerate(bones):
       cubes = c.get('cubes', [])
       pivot = c.get('pivot', [0,0,0])
@@ -312,10 +469,23 @@ class UsdRigWrite:
       # print(dir(cube), ", dir(xform))
       # stage.Save()
   
-  def anim_from_json(self, anims: dict):
+  def anim_from_json(self, anims: dict, limit=0):
     for i,(k,v) in enumerate(anims.items()):
+      if limit != 0 and i == limit:
+        break
       l = v.get("animation_length")
-      self.create_animation(f"anim_{i}", l if l else 0, v.get("bones"))
+      name_compos = k.split(".", 2)
+      if len(name_compos) == 3:
+        name = name_compos[2].replace(".", "_")
+      else:
+        name = i
+      self.create_animation(f"{name}", l if l else 0, v.get("bones"), loop=v.get("loop", False), start_delay=v.get("start_delay"))
   
   def output(self):
     print_stage(self.stage)
+  
+  @classmethod
+  def zip(cls, usd_path, path):
+    UsdUtils.CreateNewUsdzPackage(Sdf.AssetPath(usd_path), path)
+    
+    

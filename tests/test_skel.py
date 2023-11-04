@@ -10,11 +10,13 @@ Path.mkdir(folder, exist_ok=True)
 geom_url = "https://raw.githubusercontent.com/Mojang/bedrock-samples/preview/resource_pack/models/entity/"
 anim_url = "https://raw.githubusercontent.com/Mojang/bedrock-samples/preview/resource_pack/animations/"
 
+
 @pytest.fixture
 def test_base_geom() -> list:
   path = geom_url+"armor_stand.geo.json"
   json = BedrockJSON()
   return json.request_json(path)
+
 
 @pytest.fixture
 def test_base_anim_pose() -> dict:
@@ -22,26 +24,32 @@ def test_base_anim_pose() -> dict:
   json = BedrockJSON()
   return json.request_json(path)
 
+
 @pytest.fixture
 def test_base_skel(test_base_geom: list) -> UsdRigWrite:
   rig = UsdRigWrite()
+  rig.set_name("armor_stand")
   rig.create_stage("rig_output/armor_stand.usda")
   rig.from_json(test_base_geom)
   return rig
-  
+
+
 def test_request(test_base_geom: list):
   assert test_base_geom != None 
+
 
 def test_result(test_base_skel: UsdRigWrite):
   rig = test_base_skel
   # rig.output()
   rig.stage.Save()
+  
 
 def test_anim_pose(test_base_skel: UsdRigWrite, test_base_anim_pose: dict):
   rig = test_base_skel
-  rig.anim_from_json(test_base_anim_pose)
-  print("/n", "Pose:")
+  print("\n", "Pose:")
+  rig.anim_from_json(test_base_anim_pose, limit=1)
   rig.output()
+
 
 def test_anim_anim():
   path_geo = geom_url+"phantom.geo.json"
@@ -50,9 +58,36 @@ def test_anim_anim():
   bones = json.request_json(path_geo)
   anims = json.request_json(path_anim)
   rig = UsdRigWrite()
+  rig.set_name("phantom")
   rig.create_stage("rig_output/phantom.usda")
   rig.from_json(bones)
   rig.stage.Save()
   rig.anim_from_json(anims)
+  rig.output()
   print("Hard part.")
+
+
+def test_chicken():
+  path_geo = geom_url+"chicken.geo.json"
+  path_anim = anim_url+"chicken.animation.json"
+  json = BedrockJSON()
+  bones = json.request_json(path_geo)
+  anims = json.request_json(path_anim)
+  rig = UsdRigWrite()
+  rig.set_name("chicken")
+  rig.create_stage("rig_output/chicken.usda")
+  rig.from_json(bones)
+  rig.stage.Save()
   
+  rig.anim_from_json(anims)
+  rig.output()
+
+
+def test_usdz_armorstand():
+  try:
+    UsdRigWrite.zip("rig_output/armor_stand.usda", "rig_output/armor_stand.usdz")
+    UsdRigWrite.zip("rig_output/chicken.usda", "rig_output/chicken.usdz")
+    UsdRigWrite.zip("rig_output/phantom.usda", "rig_output/phantom.usdz")
+  except Exception as e:
+    print(e)
+
