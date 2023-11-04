@@ -231,7 +231,7 @@ class UsdRigWrite:
     # Set Materials
     if mat == None:
       if not self.materials:
-        mat = self.create_material(self.name, "/tex/chicken.png", path=cube_path)
+        mat = self.create_material(self.name, "/tex/chicken.png")
         self.materials.append(mat)
       self.assign_mesh_mat(cube, self.materials[0])
     return xform
